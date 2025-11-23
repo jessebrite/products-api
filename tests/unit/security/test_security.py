@@ -1,7 +1,7 @@
 """Unit tests for security module."""
 
 import pytest
-from src.core.security import (
+from src.security.security import (
     get_password_hash,
     verify_password,
     create_access_token,

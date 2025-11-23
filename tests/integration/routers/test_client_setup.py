@@ -19,5 +19,5 @@ def test_client_setup():
         json={"username": "testuser", "email": "test@example.com", "password": "password123"},
     )
 
-    assert response.status_code == 400, "Failed to register user"
-    assert response.json().get("username") == None
+    assert response.status_code == 200, "Failed to register user"
+    assert response.json().get("username") == "testuser"

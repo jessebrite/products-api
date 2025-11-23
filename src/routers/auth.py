@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from database import get_db
 from models import User
 from schemas import UserCreate, UserResponse, Token
-from core import (
+from security import (
     verify_password,
     get_password_hash,
     create_access_token,

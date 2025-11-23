@@ -3,9 +3,10 @@ FastAPI CRUD application with security and Swagger documentation.
 """
 
 from fastapi import FastAPI
+from fastapi.responses import RedirectResponse
 from sqlalchemy import create_engine
 
-from config import settings
+from config.settings import settings
 from models import Base
 from routers import auth, users, items
 from utils import health_check
@@ -29,6 +30,10 @@ app.include_router(auth.router, prefix=settings.api_prefix)
 app.include_router(users.router, prefix=settings.api_prefix)
 app.include_router(items.router, prefix=settings.api_prefix)
 
+# Root path redirect to docs
+@app.get("/", include_in_schema=False)
+async def root():
+    return RedirectResponse(url="/docs")
 
 # Health check endpoint
 @app.get("/health", tags=["Health"])

@@ -7,10 +7,57 @@ See src/vault.py for the secret management system.
 See .env.example for the required environment variables.
 """
 
+import os
+from pathlib import Path
+import tomllib
+import logging
 from pydantic import ConfigDict
 from pydantic_settings import BaseSettings
 
 from vault import vault
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.DEBUG)
+
+def read_pyproject_metadata() -> tuple[str, str, str]:
+    """Read project metadata from pyproject.toml and version.txt.
+
+    Returns:
+        Tuple[str, str, str]: (app_name, app_description, app_version)
+    """
+    default_name = "CRUD API"
+    default_description = "A secure CRUD API with JWT authentication"
+    default_version = "0.1.1"
+
+    app_name = default_name
+    app_description = default_description
+    app_version = default_version
+
+    base_path = Path(__file__).parent.parent.parent.resolve()
+    pyproject_path = os.path.join(base_path, "pyproject.toml")
+    version_path = os.path.join(base_path, "version.txt")
+
+    try:
+        # Load pyproject.toml
+        with open(pyproject_path, "rb") as f:
+            pyproject_data = tomllib.load(f)
+            project_data = pyproject_data.get("project", {})
+            app_name = project_data.get("name") or default_name
+            app_description = project_data.get("description") or default_description
+
+        # Load version.txt if exists
+        if os.path.exists(version_path):
+            with open(version_path, "r", encoding="utf-8") as vf:
+                version_content = vf.read().strip()
+                app_version = version_content if version_content else default_version
+
+        logger.info(f"DEBUG: Loaded app_name='{app_name}', app_description='{app_description}', app_version='{app_version}'")
+
+    except Exception as error:
+        logger.error(f"Error reading project metadata: {error} ")
+        logger.error("Using default metadata values.")
+
+    return app_name, app_description, app_version
 
 
 class Settings(BaseSettings):
@@ -25,10 +72,10 @@ class Settings(BaseSettings):
         case_sensitive=False,
     )
 
-    # API Info (non-sensitive)
-    app_name: str = "CRUD API"
-    app_version: str = "1.0.0"
-    app_description: str = "A secure CRUD API with JWT authentication"
+    # API Info (non-sensitive) - loaded dynamically from pyproject.toml and version.txt
+    app_name: str
+    app_version: str
+    app_description: str
 
     # Security (loaded from vault/environment)
     secret_key: str = ""  # Loaded via vault
@@ -43,7 +90,13 @@ class Settings(BaseSettings):
     api_prefix: str = "/api/v1"
 
     def __init__(self, **data):
-        """Initialize settings with vault secrets."""
+        # Read project metadata
+        app_name, app_description, app_version = read_pyproject_metadata()
+        # Set metadata if not explicitly provided
+        data.setdefault("app_name", app_name)
+        data.setdefault("app_description", app_description)
+        data.setdefault("app_version", app_version)
+
         super().__init__(**data)
         
         # Load secrets from vault
