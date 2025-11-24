@@ -1,7 +1,5 @@
 """Integration tests for general API endpoints."""
 
-import pytest
-
 
 class TestAPIBasics:
     """Test basic API functionality."""

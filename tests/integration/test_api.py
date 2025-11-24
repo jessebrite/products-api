@@ -1,12 +1,15 @@
 import pytest
+
 from main import app
 
 # client = TestClient(app)
+
 
 def test_swagger_docs_accessible(client):
     response = client.get("/docs")
     assert response.status_code == 200
     assert "Swagger UI" in response.text or "swagger-ui" in response.text.lower()
+
 
 def test_openapi_metadata(client):
     response = client.get("/openapi.json")
@@ -18,11 +21,17 @@ def test_openapi_metadata(client):
     assert json_data["info"]["description"] == app.description
     assert json_data["info"]["version"] == app.version
 
+
 def test_health_endpoint(client):
     response = client.get("/health")
     assert response.status_code == 200
     data = response.json()
-    assert "status" in data or data.get("status") == "ok" or data.get("status") == "running"
+    assert (
+        "status" in data
+        or data.get("status") == "ok"
+        or data.get("status") == "running"
+    )
+
 
 @pytest.mark.parametrize(
     "endpoint, method",
@@ -30,15 +39,23 @@ def test_health_endpoint(client):
         ("/api/v1/auth/token", "POST"),
         ("/api/v1/users", "GET"),
         ("/api/v1/items", "GET"),
-    ]
+    ],
 )
 def test_protected_or_api_endpoints_status(endpoint, method, client):
     if method == "GET":
         response = client.get(endpoint)
     elif method == "POST":
-        # Send empty data for token endpoint, expecting 422 or 401 or 405 if method not allowed
+        # Send empty data for token endpoint, expecting 422 or 401 or
+        # 405 if method not allowed
         response = client.post(endpoint, data={})
     else:
         response = client.get(endpoint)
     # Status code may vary depending on authentication required or endpoint setup
-    assert response.status_code in (200, 401, 422, 403, 404, 405)  # Accept expected variation
+    assert response.status_code in (
+        200,
+        401,
+        422,
+        403,
+        404,
+        405,
+    )  # Accept expected variation

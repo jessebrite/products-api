@@ -3,7 +3,8 @@
 import pytest
 from pydantic import ValidationError
 
-from schemas import UserCreate, UserResponse, ItemCreate, ItemResponse
+from schemas import ItemCreate, UserCreate
+
 
 class TestUserCreateSchema:
     """Test UserCreate schema validation."""

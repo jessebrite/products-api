@@ -15,7 +15,7 @@ def auth_token(client):
             "password": "password123",
         },
     )
-    
+
     # Login and get token
     response = client.post(
         "/api/v1/auth/token",

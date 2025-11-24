@@ -37,6 +37,13 @@ jobs:
         run: |
           ruff format --check .
 
-      - name: Run pytest
+      - name: Clean up old test DB (CI only)
+        if: env.CI == 'true'
         run: |
-          pytest -q  # -q = quiet mode
+          rm -f test_ci.db pytest_github_actions.db /tmp/pytest_github_actions.db
+
+      - name: Run pytest
+        env:
+          CI: true # signal conftest.py to use in-memory DB
+        run: |
+          pytest -v --tb=long

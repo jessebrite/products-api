@@ -1,13 +1,13 @@
 """Item CRUD routes."""
 
-from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from database import get_db
-from models import User, Item
-from schemas import ItemCreate, ItemUpdate, ItemResponse
+from models import Item, User
+from schemas import ItemCreate, ItemResponse, ItemUpdate
 from security import get_current_user
-from tasks import send_item_notification, log_user_action, process_item_completion
+from tasks import log_user_action, process_item_completion, send_item_notification
 
 router = APIRouter(prefix="/items", tags=["Items"])
 
@@ -39,9 +39,7 @@ async def create_item(
     - Send notification
     - Log action
     """
-    db_item = Item(
-        title=item.title, description=item.description, owner_id=user.id
-    )
+    db_item = Item(title=item.title, description=item.description, owner_id=user.id)
     db.add(db_item)
     db.commit()
     db.refresh(db_item)

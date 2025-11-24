@@ -54,7 +54,8 @@ def read_pyproject_metadata() -> tuple[str, str, str]:
                 app_version = version_content if version_content else default_version
 
         logger.info(
-            f"Loaded app_name='{app_name}', app_description='{app_description}', app_version='{app_version}'"
+            f"Loaded app_name='{app_name}', app_description='{app_description}'"
+            f" , app_version='{app_version}'"
         )
 
     except Exception as error:

@@ -2,20 +2,20 @@
 
 from datetime import timedelta
 
-from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
+from config import settings
 from database import get_db
 from models import User
-from schemas import UserCreate, UserResponse, Token
+from schemas import Token, UserCreate, UserResponse
 from security import (
-    verify_password,
-    get_password_hash,
     create_access_token,
+    get_password_hash,
+    verify_password,
 )
-from config import settings
-from tasks import send_welcome_email, log_user_action
+from tasks import log_user_action, send_welcome_email
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -32,7 +32,7 @@ async def register(
     - **username**: Unique username
     - **email**: Valid email address
     - **password**: User's password
-    
+
     Background tasks:
     - Send welcome email
     - Log user registration
@@ -56,11 +56,13 @@ async def register(
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
-    
+
     # Add background tasks (run after response is sent)
     background_tasks.add_task(send_welcome_email, user.email, user.username)
-    background_tasks.add_task(log_user_action, user.username, "REGISTER", f"email: {user.email}")
-    
+    background_tasks.add_task(
+        log_user_action, user.username, "REGISTER", f"email: {user.email}"
+    )
+
     return db_user
 
 
@@ -75,7 +77,7 @@ async def login(
 
     - **username**: User's username
     - **password**: User's password
-    
+
     Background tasks:
     - Log user login
     """
@@ -94,6 +96,8 @@ async def login(
     )
 
     # Log user login as background task
-    background_tasks.add_task(log_user_action, user.username, "LOGIN", "successful authentication")
-    
+    background_tasks.add_task(
+        log_user_action, user.username, "LOGIN", "successful authentication"
+    )
+
     return {"access_token": access_token, "token_type": "bearer"}
