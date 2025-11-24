@@ -1,7 +1,5 @@
 """Integration tests for item endpoints."""
 
-import pytest
-
 
 class TestItemCRUD:
     """Test complete CRUD operations for items."""
@@ -50,8 +48,8 @@ class TestItemCRUD:
             client.post(
                 "/api/v1/items",
                 json={
-                    "title": f"Item {i+1}",
-                    "description": f"Description {i+1}",
+                    "title": f"Item {i + 1}",
+                    "description": f"Description {i + 1}",
                 },
                 headers={"Authorization": f"Bearer {auth_token}"},
             )
@@ -167,7 +165,7 @@ class TestItemCRUD:
             f"/api/v1/items/{item_id}",
             headers={"Authorization": f"Bearer {auth_token}"},
         )
-        assert response.status_code == 204  # No Content response for successful delete
+        assert response.status_code == 204
 
         # Verify it's deleted
         get_response = client.get(
@@ -230,6 +228,7 @@ class TestItemOwnership:
             headers={"Authorization": f"Bearer {user1_token}"},
         )
         item_id = item_response.json()["id"]
+        assert item_id == 1
 
         # User 2 should not be able to see user 1's items
         user2_items = client.get(

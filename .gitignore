@@ -76,3 +76,4 @@ Thumbs.db
 *.db
 app.db
 test_app.db
+test_ci.db

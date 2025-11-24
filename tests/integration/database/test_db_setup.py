@@ -1,8 +1,8 @@
 """Test script to verify database setup."""
 
-import pytest
-from tests.conftest import test_engine, Base, app
 import sqlalchemy
+
+from tests.conftest import test_engine
 
 
 def test_tables_exist():
@@ -26,6 +26,7 @@ def test_query_users_table(get_db_fixture):
     try:
         # Query using the User model instead of metadata
         from models import User
+
         users = db.query(User).all()
         print("Query successful! Found", len(users), "users")
         assert True
@@ -39,4 +40,3 @@ def test_dependency_override(client):
     # If client fixture works, the test database is set up correctly
     assert client is not None
     print("Dependency override test passed!")
-

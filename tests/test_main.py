@@ -15,7 +15,11 @@ def test_user(client):
     """Create a test user."""
     response = client.post(
         "/api/v1/auth/register",
-        json={"username": "testuser", "email": "test@example.com", "password": "password123"},
+        json={
+            "username": "testuser",
+            "email": "test@example.com",
+            "password": "password123",
+        },
     )
     return response.json()
 
@@ -34,7 +38,11 @@ def test_register_user(client):
     """Test user registration."""
     response = client.post(
         "/api/v1/auth/register",
-        json={"username": "newuser", "email": "new@example.com", "password": "password123"},
+        json={
+            "username": "newuser",
+            "email": "new@example.com",
+            "password": "password123",
+        },
     )
     assert response.status_code == 200
     assert response.json()["username"] == "newuser"
@@ -44,11 +52,19 @@ def test_register_duplicate_username(client):
     """Test registration with duplicate username."""
     client.post(
         "/api/v1/auth/register",
-        json={"username": "duplicate", "email": "first@example.com", "password": "password123"},
+        json={
+            "username": "duplicate",
+            "email": "first@example.com",
+            "password": "password123",
+        },
     )
     response = client.post(
         "/api/v1/auth/register",
-        json={"username": "duplicate", "email": "second@example.com", "password": "password123"},
+        json={
+            "username": "duplicate",
+            "email": "second@example.com",
+            "password": "password123",
+        },
     )
     assert response.status_code == 400
 

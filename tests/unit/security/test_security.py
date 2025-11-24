@@ -1,13 +1,10 @@
 """Unit tests for security module."""
 
-import pytest
 from src.security.security import (
+    create_access_token,
     get_password_hash,
     verify_password,
-    create_access_token,
-    get_current_user,
 )
-from fastapi import HTTPException, status
 
 
 class TestPasswordHashing:

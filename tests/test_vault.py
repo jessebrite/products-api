@@ -1,9 +1,10 @@
-import pytest
 import os
 import warnings
 from unittest.mock import patch
 
-from src.vault import SecretVault, vault, get_vault
+import pytest
+
+from src.vault import SecretVault, get_vault, vault
 
 
 @pytest.fixture(autouse=True)
@@ -15,10 +16,17 @@ def clear_cache():
     vault._accessed_secrets.clear()
 
 
-@pytest.mark.parametrize("env_dict, key, expected_value", [
-    ({"SECRET_KEY": "mysecretkey123456789012345678901234"}, "SECRET_KEY", "mysecretkey123456789012345678901234"),
-    ({}, "SMTP_SERVER", "smtp.test"),
-])
+@pytest.mark.parametrize(
+    "env_dict, key, expected_value",
+    [
+        (
+            {"SECRET_KEY": "mysecretkey123456789012345678901234"},
+            "SECRET_KEY",
+            "mysecretkey123456789012345678901234",
+        ),
+        ({}, "SMTP_SERVER", "smtp.test"),
+    ],
+)
 def test_get_secret(env_dict, key, expected_value):
     with patch.dict(os.environ, env_dict, clear=True):
         if key == "SECRET_KEY":
@@ -46,10 +54,13 @@ def test_get_secret_warns_for_weak_secret_key():
             assert any("WARNING" in str(warn.message) for warn in w)
 
 
-@pytest.mark.parametrize("env_dict, key, expected", [
-    ({"NEW_SECRET": "value"}, "NEW_SECRET", True),
-    ({}, "UNKNOWN_SECRET", False),
-])
+@pytest.mark.parametrize(
+    "env_dict, key, expected",
+    [
+        ({"NEW_SECRET": "value"}, "NEW_SECRET", True),
+        ({}, "UNKNOWN_SECRET", False),
+    ],
+)
 def test_has_secret(env_dict, key, expected):
     with patch.dict(os.environ, env_dict, clear=True):
         assert vault.has_secret(key) is expected
@@ -67,10 +78,16 @@ def test_get_all_secrets_mask_and_values():
             assert any("WARNING" in str(warn.message) for warn in w)
 
 
-@pytest.mark.parametrize("env_dict, should_raise", [
-    ({"SECRET_KEY": "a"*32, "ALGORITHM": "HS256", "DATABASE_URL": "dburl"}, False),
-    ({}, True),
-])
+@pytest.mark.parametrize(
+    "env_dict, should_raise",
+    [
+        (
+            {"SECRET_KEY": "a" * 32, "ALGORITHM": "HS256", "DATABASE_URL": "dburl"},
+            False,
+        ),
+        ({}, True),
+    ],
+)
 def test_validate_secrets(env_dict, should_raise):
     vault._secrets_cache.clear()
     with patch.dict(os.environ, env_dict, clear=True):
@@ -82,24 +99,34 @@ def test_validate_secrets(env_dict, should_raise):
             assert result.get("status") == "valid"
 
 
-@pytest.mark.parametrize("env_val, key, expected", [
-    ("smtp.test", "SMTP_SERVER", "smtp.test"),
-    (None, "SMTP_SERVER", "defval"),
-])
+@pytest.mark.parametrize(
+    "env_val, key, expected",
+    [
+        ("smtp.test", "SMTP_SERVER", "smtp.test"),
+        (None, "SMTP_SERVER", "defval"),
+    ],
+)
 def test_get_optional_secret(env_val, key, expected):
     env = {key: env_val} if env_val is not None else {}
     with patch.dict(os.environ, env, clear=True):
         assert vault.get_optional_secret(key, default="defval") == expected
 
 
-@pytest.mark.parametrize("secret, show_chars, expected_start, expected_end, expected_mask", [
-    ("abcdefghij", 3, "abc", "hij", True),
-    ("abcd", 3, "", "", False),
-])
-def test_obfuscate_secret(secret, show_chars, expected_start, expected_end, expected_mask):
+@pytest.mark.parametrize(
+    "secret, show_chars, expected_start, expected_end, expected_mask",
+    [
+        ("abcdefghij", 3, "abc", "hij", True),
+        ("abcd", 3, "", "", False),
+    ],
+)
+def test_obfuscate_secret(
+    secret, show_chars, expected_start, expected_end, expected_mask
+):
     obfuscated = SecretVault.obfuscate_secret(secret, show_chars=show_chars)
     if expected_mask:
-        assert obfuscated.startswith(expected_start) and obfuscated.endswith(expected_end)
+        assert obfuscated.startswith(expected_start) and obfuscated.endswith(
+            expected_end
+        )
         assert "*" in obfuscated
     else:
         assert obfuscated == "*" * len(secret)

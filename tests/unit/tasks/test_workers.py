@@ -1,14 +1,14 @@
 """Unit tests for background tasks."""
 
-import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
+
 from tasks.worker import (
-    send_welcome_email,
+    cleanup_old_data,
     log_user_action,
-    send_item_notification,
     process_item_completion,
     send_batch_email,
-    cleanup_old_data,
+    send_item_notification,
+    send_welcome_email,
 )
 
 
@@ -55,7 +55,7 @@ class TestLoggingTasks:
             ("UPDATE_ITEM", "marked as completed"),
             ("DELETE_ITEM", "archived item"),
         ]
-        
+
         for action, details in actions:
             log_user_action("testuser", action, details)
 
@@ -65,9 +65,7 @@ class TestNotificationTasks:
 
     def test_send_item_notification_created(self):
         """Test item creation notification."""
-        send_item_notification(
-            "user@example.com", "testuser", "New Item", "created"
-        )
+        send_item_notification("user@example.com", "testuser", "New Item", "created")
 
     def test_send_item_notification_updated(self):
         """Test item update notification."""
@@ -128,6 +126,7 @@ class TestTaskExceptionHandling:
         # Even if there's an error, the task should not crash the API
         with patch("src.tasks.worker.logger") as mock_logger:
             send_welcome_email("test@example.com", "user")
+            mock_logger.error.assert_not_called()
             # Task completes without propagating exceptions
 
     def test_logging_task_with_exception(self):

@@ -1,5 +1,5 @@
 """Routers package."""
 
-from . import auth, users, items
+from . import auth, items, users
 
 __all__ = ["auth", "users", "items"]

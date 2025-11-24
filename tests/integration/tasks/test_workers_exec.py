@@ -1,7 +1,5 @@
 """Integration tests for background tasks in endpoints."""
 
-import pytest
-
 
 class TestAuthenticationWithBackgroundTasks:
     """Test authentication endpoints with background tasks."""
@@ -16,10 +14,10 @@ class TestAuthenticationWithBackgroundTasks:
                 "password": "password123",
             },
         )
-        
+
         # Request completes successfully
         assert response.status_code == 200
-        
+
         # Background tasks run after response, so user is created
         data = response.json()
         assert data["username"] == "tasktest"
@@ -61,7 +59,7 @@ class TestItemsWithBackgroundTasks:
 
         # Request completes successfully
         assert response.status_code == 200
-        
+
         data = response.json()
         assert data["title"] == "Background Task Test"
         # Background task for notification runs asynchronously
@@ -89,9 +87,7 @@ class TestItemsWithBackgroundTasks:
         assert response.json()["is_completed"] is True
         # Background tasks run after response
 
-    def test_update_item_to_incomplete_no_completion_task(
-        self, client, auth_token
-    ):
+    def test_update_item_to_incomplete_no_completion_task(self, client, auth_token):
         """Test updating back to incomplete doesn't trigger completion task."""
         # Create and complete item
         create_response = client.post(
@@ -144,7 +140,7 @@ class TestBackgroundTasksNonBlocking:
     def test_multiple_registrations_complete_quickly(self, client):
         """Test that multiple registrations aren't blocked by background tasks."""
         responses = []
-        
+
         for i in range(3):
             response = client.post(
                 "/api/v1/auth/register",
