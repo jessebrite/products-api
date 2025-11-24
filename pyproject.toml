@@ -43,7 +43,6 @@ dev = [
     "pytest==7.4.3",
     "pytest-asyncio==0.21.1",
     "black==23.12.1",
-    "flake8==6.1.0",
     "httpx==0.25.2",
 ]
 
@@ -65,7 +64,7 @@ pythonpath = ["src"]
 [tool.pytest.ini_options]
 pythonpath = ["src"]
 testpaths = ["tests"]
-python_files = ["test_*.py"]
+python_files = ["test_*.py", "*_test.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
 asyncio_mode = "strict"
@@ -74,32 +73,29 @@ asyncio_mode = "strict"
 line-length = 88
 target-version = ["py38", "py39", "py310", "py311"]
 include = '\.pyi?$'
-extend-exclude = '''
-/(
-  # directories
-  \.eggs
-  | \.git
-  | \.hg
-  | \.mypy_cache
-  | \.tox
-  | \.venv
-  | build
-  | dist
-)/
-'''
 
-[tool.flake8]
-max-line-length = 88
-extend-ignore = ["E203", "W503"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py311"
+
+# Enable Ruff rules (compatible with Flake8, isort, etc.)
+select = ["E", "W", "F", "I"]
+
+# Don't fight with Black formatting
+ignore = ["E203"]
+# Ruff autofix on save (VS Code handles this)
+fix = true
+
+# Directories to skip
 exclude = [
     ".git",
     "__pycache__",
-    "docs/source/conf.py",
+    ".venv",
     "build",
     "dist",
-    ".venv",
-    "venv",
-]
-per-file-ignores = [
-    "__init__.py:F401",
+    ".eggs",
+    ".mypy_cache",
+    ".tox",
+    ".hg"
 ]

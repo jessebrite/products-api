@@ -7,10 +7,11 @@ See src/vault.py for the secret management system.
 See .env.example for the required environment variables.
 """
 
-import os
-from pathlib import Path
-import tomllib
 import logging
+import os
+import tomllib
+from pathlib import Path
+
 from pydantic import ConfigDict
 from pydantic_settings import BaseSettings
 
@@ -18,6 +19,7 @@ from vault import vault
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
+
 
 def read_pyproject_metadata() -> tuple[str, str, str]:
     """Read project metadata from pyproject.toml and version.txt.
@@ -51,7 +53,9 @@ def read_pyproject_metadata() -> tuple[str, str, str]:
                 version_content = vf.read().strip()
                 app_version = version_content if version_content else default_version
 
-        logger.info(f"DEBUG: Loaded app_name='{app_name}', app_description='{app_description}', app_version='{app_version}'")
+        logger.info(
+            f"Loaded app_name='{app_name}', app_description='{app_description}', app_version='{app_version}'"
+        )
 
     except Exception as error:
         logger.error(f"Error reading project metadata: {error} ")
@@ -62,7 +66,7 @@ def read_pyproject_metadata() -> tuple[str, str, str]:
 
 class Settings(BaseSettings):
     """Application settings with vault-managed secrets.
-    
+
     All sensitive values (like SECRET_KEY) are loaded from the vault
     which reads from environment variables.
     """
@@ -98,21 +102,15 @@ class Settings(BaseSettings):
         data.setdefault("app_version", app_version)
 
         super().__init__(**data)
-        
+
         # Load secrets from vault
-        self.secret_key = vault.get_secret(
-            "SECRET_KEY",
-            default=self.secret_key or "your-secret-key-change-this-in-production"
-        )
-        self.database_url = vault.get_secret(
-            "DATABASE_URL",
-            default=self.database_url or "sqlite:///./app.db"
-        )
-        
+        self.secret_key = vault.get_secret("SECRET_KEY", default=self.secret_key)
+        self.database_url = vault.get_secret("DATABASE_URL", default=self.database_url)
+
         # Optionally override from environment if set
         if self.algorithm:
             self.algorithm = vault.get_optional_secret("ALGORITHM") or self.algorithm
-        
+
         if self.access_token_expire_minutes:
             minutes_str = vault.get_optional_secret("ACCESS_TOKEN_EXPIRE_MINUTES")
             if minutes_str:
@@ -127,4 +125,5 @@ try:
     vault.validate_secrets()
 except ValueError as e:
     import warnings
+
     warnings.warn(f"⚠️  Secret validation warning: {e}", RuntimeWarning)

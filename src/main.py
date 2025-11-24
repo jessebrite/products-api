@@ -8,13 +8,11 @@ from sqlalchemy import create_engine
 
 from config.settings import settings
 from models import Base
-from routers import auth, users, items
+from routers import auth, items, users
 from utils import health_check
 
 # Create database engine and tables
-engine = create_engine(
-    settings.database_url, connect_args={"check_same_thread": False}
-)
+engine = create_engine(settings.database_url, connect_args={"check_same_thread": False})
 Base.metadata.create_all(bind=engine)
 
 # Initialize FastAPI app
@@ -30,10 +28,12 @@ app.include_router(auth.router, prefix=settings.api_prefix)
 app.include_router(users.router, prefix=settings.api_prefix)
 app.include_router(items.router, prefix=settings.api_prefix)
 
+
 # Root path redirect to docs
 @app.get("/", include_in_schema=False)
 async def root():
     return RedirectResponse(url="/docs")
+
 
 # Health check endpoint
 @app.get("/health", tags=["Health"])

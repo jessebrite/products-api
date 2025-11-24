@@ -3,6 +3,10 @@
 import os
 from typing import Optional, Any
 import warnings
+from dotenv import load_dotenv
+
+# Load .env file early to populate os.environ
+load_dotenv()
 
 
 class SecretVault:
@@ -71,8 +75,7 @@ class SecretVault:
             
             # Warn if production secret is using default/weak value
             if key == "SECRET_KEY" and (
-                value == "your-secret-key-change-this-in-production"
-                or len(value) < 32
+                "dev" in value.lower() or len(value) < 32
             ):
                 warnings.warn(
                     f"⚠️  WARNING: '{key}' is using a weak default value! "
