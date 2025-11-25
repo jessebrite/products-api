@@ -10,15 +10,24 @@ from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-TEST_DB_PATH = Path(__file__).parent.parent / "test_app.db"
-
 # Patch environment and settings BEFORE any application imports
 # This is the crucial part to prevent the app from using the production DB during tests
+
+# unit tests pass for this config but not integration tests (writable file needed)
+TEST_DB_PATH = Path(__file__).parent.parent / "test_app.db"
+
 if os.environ.get("CI"):
-    os.environ["DATABASE_URL"] = "sqlite:///test_ci.db"
+    os.environ["DATABASE_URL"] = f"sqlite:///{Path('/tmp') / 'test_ci.db'}"
 else:
     os.environ["DATABASE_URL"] = f"sqlite:///{TEST_DB_PATH}"
 
+# unit tests fail for this config
+# if os.environ.get("CI"):
+#     TEST_DB_PATH = Path("/tmp/test_ci.db")
+# else:
+#     TEST_DB_PATH = Path(__file__).parent.parent / "test_app.db"
+
+# os.environ["DATABASE_URL"] = f"sqlite:///{TEST_DB_PATH}"
 
 # Add src and tests to path to allow for imports
 src_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src"))
@@ -35,18 +44,6 @@ import database
 from main import app
 from models import Base
 
-# Clean up any existing test database file from previous runs
-if TEST_DB_PATH.exists():
-    try:
-        TEST_DB_PATH.unlink()
-    except PermissionError:
-        # If it fails, try again after a short delay
-        time.sleep(0.5)
-        try:
-            TEST_DB_PATH.unlink()
-        except Exception:
-            pass  # Ignore if it still fails
-
 # Create a new engine with the test database URL
 test_engine = create_engine(
     f"sqlite:///{TEST_DB_PATH}", connect_args={"check_same_thread": False}
@@ -57,6 +54,16 @@ database.engine = test_engine
 
 # Create all tables in the test database
 Base.metadata.create_all(bind=test_engine)
+
+
+# doesn't seem to inject as expected. Needs another look
+@pytest.fixture(autouse=True)
+def force_in_memory_for_unit_tests(monkeypatch, request):
+    # If the test is marked "unit" or lives in tests/unit/, force in-memory
+    marker = request.node.get_closest_marker("unit")
+    if marker or "tests/unit" in str(request.fspath):
+        TEST_DB_PATH = Path(__file__).parent.parent / "test_app.db"
+        monkeypatch.setenv("DATABASE_URL", f"sqlite:///{TEST_DB_PATH}")
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -118,6 +125,14 @@ def cleanup_test_db():
             else:
                 # If it still fails after multiple attempts, just leave it.
                 pass
+
+
+# tests/conftest.py (or any conftest in tests/)
+def pytest_collection_modifyitems(items):
+    # If a test file is inside tests/integration/, auto-mark it as integration
+    for item in items:
+        if "tests/integration" in item.nodeid:
+            item.add_marker("integration")
 
 
 # Export fixtures for direct imports in other test files
