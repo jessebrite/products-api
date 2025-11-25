@@ -13,21 +13,13 @@ from sqlalchemy.orm import sessionmaker
 # Patch environment and settings BEFORE any application imports
 # This is the crucial part to prevent the app from using the production DB during tests
 
-# unit tests pass for this config but not integration tests (writable file needed)
-# TEST_DB_PATH = Path(__file__).parent.parent / "test_app.db"
+TEST_DB_PATH: Path = Path(__file__).parent.parent / "test_app.db"
 
-# if os.environ.get("CI"):
-#     os.environ["DATABASE_URL"] = f"sqlite:///{Path('/tmp') / 'test_ci.db'}"
-# else:
-#     os.environ["DATABASE_URL"] = f"sqlite:///{TEST_DB_PATH}"
-
-# unit tests fail for this config
 if os.environ.get("CI"):
-    TEST_DB_PATH = Path("/tmp/test_ci.db")
+    os.environ["DATABASE_URL"] = f"sqlite:///{Path('/tmp') / 'test_ci.db'}"
 else:
-    TEST_DB_PATH = Path(__file__).parent.parent / "test_app.db"
+    os.environ["DATABASE_URL"] = f"sqlite:///{TEST_DB_PATH}"
 
-os.environ["DATABASE_URL"] = f"sqlite:///{TEST_DB_PATH}"
 
 # Add src and tests to path to allow for imports
 src_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src"))
@@ -45,9 +37,15 @@ from main import app
 from models import Base
 
 # Create a new engine with the test database URL
-test_engine = create_engine(
-    f"sqlite:///{TEST_DB_PATH}", connect_args={"check_same_thread": False}
-)
+if os.environ.get("CI"):
+    test_engine = create_engine(
+        f"sqlite:///{Path('/tmp') / 'test_ci.db'}",
+        connect_args={"check_same_thread": False},
+    )
+else:
+    test_engine = create_engine(
+        f"sqlite:///{TEST_DB_PATH}", connect_args={"check_same_thread": False}
+    )
 
 # Replace the engine in the database module with the test engine
 database.engine = test_engine
@@ -56,20 +54,13 @@ database.engine = test_engine
 Base.metadata.create_all(bind=test_engine)
 
 
-# doesn't seem to inject as expected. Needs another look
-@pytest.fixture(autouse=True)
-def force_in_memory_for_unit_tests(monkeypatch, request):
-    # If the test is marked "unit" or lives in tests/unit/, force in-memory
-    marker = request.node.get_closest_marker("unit")
-    if marker or "tests/unit" in str(request.fspath):
-        TEST_DB_PATH = Path(__file__).parent.parent / "test_app.db"
-        monkeypatch.setenv("DATABASE_URL", f"sqlite:///{TEST_DB_PATH}")
-
-
 @pytest.fixture(scope="session", autouse=True)
 def set_test_db_url():
     """Ensure the DATABASE_URL is set for the entire test session."""
-    os.environ["DATABASE_URL"] = f"sqlite:///{TEST_DB_PATH}"
+    if os.environ.get("CI"):
+        os.environ["DATABASE_URL"] = f"sqlite:///{Path('/tmp') / 'test_ci.db'}"
+    else:
+        os.environ["DATABASE_URL"] = f"sqlite:///{TEST_DB_PATH}"
 
 
 @pytest.fixture(scope="function")
@@ -97,7 +88,7 @@ def reset_db():
 
 
 @pytest.fixture(scope="function")
-def client(reset_db):
+def client(reset_db: None):
     """Return a TestClient instance for making API requests.
 
     Depends on reset_db to ensure a fresh database for each test.
