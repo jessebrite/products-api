@@ -9,9 +9,9 @@ See .env.example for the required environment variables.
 
 import logging
 import os
-import tomllib
 from pathlib import Path
 
+import tomli
 from pydantic import ConfigDict
 from pydantic_settings import BaseSettings
 
@@ -42,7 +42,7 @@ def read_pyproject_metadata() -> tuple[str, str, str]:
     try:
         # Load pyproject.toml
         with open(pyproject_path, "rb") as f:
-            pyproject_data = tomllib.load(f)
+            pyproject_data = tomli.load(f)
             project_data = pyproject_data.get("project", {})
             app_name = project_data.get("name") or default_name
             app_description = project_data.get("description") or default_description
