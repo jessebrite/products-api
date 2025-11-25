@@ -14,20 +14,20 @@ from sqlalchemy.orm import sessionmaker
 # This is the crucial part to prevent the app from using the production DB during tests
 
 # unit tests pass for this config but not integration tests (writable file needed)
-TEST_DB_PATH = Path(__file__).parent.parent / "test_app.db"
+# TEST_DB_PATH = Path(__file__).parent.parent / "test_app.db"
 
-if os.environ.get("CI"):
-    os.environ["DATABASE_URL"] = f"sqlite:///{Path('/tmp') / 'test_ci.db'}"
-else:
-    os.environ["DATABASE_URL"] = f"sqlite:///{TEST_DB_PATH}"
+# if os.environ.get("CI"):
+#     os.environ["DATABASE_URL"] = f"sqlite:///{Path('/tmp') / 'test_ci.db'}"
+# else:
+#     os.environ["DATABASE_URL"] = f"sqlite:///{TEST_DB_PATH}"
 
 # unit tests fail for this config
-# if os.environ.get("CI"):
-#     TEST_DB_PATH = Path("/tmp/test_ci.db")
-# else:
-#     TEST_DB_PATH = Path(__file__).parent.parent / "test_app.db"
+if os.environ.get("CI"):
+    TEST_DB_PATH = Path("/tmp/test_ci.db")
+else:
+    TEST_DB_PATH = Path(__file__).parent.parent / "test_app.db"
 
-# os.environ["DATABASE_URL"] = f"sqlite:///{TEST_DB_PATH}"
+os.environ["DATABASE_URL"] = f"sqlite:///{TEST_DB_PATH}"
 
 # Add src and tests to path to allow for imports
 src_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src"))
