@@ -30,7 +30,7 @@ allowing long-running operations without blocking the user's request.
 """
 WHAT ARE BACKGROUND TASKS?
 ==========================
-Background tasks are asynchronous operations that run after your API 
+Background tasks are asynchronous operations that run after your API
 endpoint returns a response. They're perfect for:
 
 ✅ Sending emails (welcome, notifications, confirmations)
@@ -133,16 +133,16 @@ STEP-BY-STEP FLOW
    - Validate request
    - Create database objects
    - Commit to database
-   
+
 3. BACKGROUND TASKS ADDED TO QUEUE
    background_tasks.add_task(send_welcome_email, "john@example.com", "john")
    background_tasks.add_task(log_user_action, "john", "REGISTER", "email: john@example.com")
-   
+
 4. RESPONSE SENT TO CLIENT
    HTTP 200 OK
    {"id": 1, "username": "john", ...}
    ← Client receives response IMMEDIATELY
-   
+
 5. BACKGROUND TASKS EXECUTE
    [After response is sent]
    - send_welcome_email runs
@@ -186,10 +186,10 @@ async def register(
     db_user = User(...)
     db.add(db_user)
     db.commit()
-    
+
     # Add background task
     background_tasks.add_task(send_welcome_email, user.email, user.username)
-    
+
     # Return response - client gets this immediately
     return db_user
     # Tasks run AFTER this return
@@ -209,17 +209,17 @@ async def create_item(
     db_item = Item(...)
     db.add(db_item)
     db.commit()
-    
+
     # Add MULTIPLE background tasks
     background_tasks.add_task(
-        send_item_notification, 
+        send_item_notification,
         user.email, username, item.title, "created"
     )
     background_tasks.add_task(
         log_user_action,
         username, "CREATE_ITEM", f"title: {item.title}"
     )
-    
+
     return db_item
     # Both tasks run after response
 
@@ -270,10 +270,10 @@ async def register(
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
-    
+
     # Send welcome email in background
     background_tasks.add_task(send_welcome_email, user.email, user.username)
-    
+
     # Client gets response immediately
     return db_user
     # Email sends while client is parsing response
@@ -290,7 +290,7 @@ async def create_item(
     background_tasks: BackgroundTasks = BackgroundTasks(),
 ):
     user = db.query(User).filter(User.username == username).first()
-    
+
     # Create item
     db_item = Item(
         title=item.title,
@@ -300,7 +300,7 @@ async def create_item(
     db.add(db_item)
     db.commit()
     db.refresh(db_item)
-    
+
     # Log action for audit trail
     background_tasks.add_task(
         log_user_action,
@@ -308,7 +308,7 @@ async def create_item(
         "CREATE_ITEM",
         f"item_id: {db_item.id}, title: {item.title}"
     )
-    
+
     return db_item
     # Action logged after response sent
 
@@ -326,12 +326,12 @@ async def update_item(
 ):
     item = db.query(Item).filter(Item.id == item_id).first()
     was_completed = item.is_completed
-    
+
     # Update item
     if item_update.is_completed is not None:
         item.is_completed = item_update.is_completed
     db.commit()
-    
+
     # Only trigger completion task if just marked as completed
     if not was_completed and item.is_completed:
         background_tasks.add_task(
@@ -340,7 +340,7 @@ async def update_item(
             username,
             item.title
         )
-    
+
     return item
 
 
@@ -357,7 +357,7 @@ async def send_newsletter(
     # Get all subscribers
     subscribers = db.query(User).filter(User.is_subscribed == True).all()
     recipient_emails = [s.email for s in subscribers]
-    
+
     # Queue batch email
     background_tasks.add_task(
         send_batch_email,
@@ -365,7 +365,7 @@ async def send_newsletter(
         newsletter.subject,
         newsletter.body
     )
-    
+
     return {"status": "Newsletter queued for sending"}
     # Emails send to all subscribers in background
 """
@@ -406,14 +406,14 @@ MONITORING TASK FAILURES
 
 1. Check application logs
    tail -f logs/app.log
-   
+
 2. Look for ERROR level entries
    [ERROR] Failed to send welcome email to ...
-   
+
 3. Monitor success rate
    - Count successful vs failed tasks
    - Set alerts for high failure rates
-   
+
 4. Store failed tasks for retry
    - Save to "failed_tasks" table
    - Retry failed tasks periodically
@@ -443,17 +443,17 @@ HOW TO DEBUG BACKGROUND TASKS
 1. CONSOLE OUTPUT
    └─ Each task prints to console (for development)
       stdout: "📧 [TASK] Welcome email sent..."
-      
+
 2. LOGGING
    └─ Tasks log to logger (for production)
       from logging import getLogger
       logger = getLogger("tasks")
       logger.info("Task executed")
-      
+
 3. CHECK TASK COMPLETION
    └─ If API response is fast, tasks might still be running
    └─ Check logs/console after response received
-   
+
 4. ADD PRINT STATEMENTS
    └─ Temporary debug prints in worker.py:
       print(f"DEBUG: Task running with args: {args}")
@@ -677,10 +677,10 @@ async def register(user: UserCreate, db: Session = Depends(get_db)):
     db_user = User(...)
     db.add(db_user)
     db.commit()
-    
+
     # Queue Celery task (persisted in Redis)
     send_welcome_email_task.delay(user.email, user.username)
-    
+
     return db_user
 
 
@@ -704,13 +704,13 @@ async def upload_file(
     file_path = f"uploads/{file.filename}"
     with open(file_path, "wb") as f:
         f.write(file.file.read())
-    
+
     # Queue async processing
     background_tasks.add_task(
         asyncio.run,
         process_large_file_async(file_path)
     )
-    
+
     return {"status": "File processing started"}
 
 
@@ -745,10 +745,10 @@ async def my_endpoint(
     background_tasks: BackgroundTasks = BackgroundTasks(),
 ):
     # Do work
-    
+
     # Add task
     background_tasks.add_task(send_welcome_email, "user@example.com", "john")
-    
+
     # Return response
     return {"status": "ok"}
 

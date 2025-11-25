@@ -27,7 +27,7 @@ jobs:
           pip install --upgrade pip
           pip install pip-audit ruff semgrep
           pip-audit --desc --fix          # auto-fix if possible
-          ruff check .
+          ruff check . --output-format=github   # GitHub annotations
           semgrep ci --config p/python --config p/fastapi
 
   unit-tests:
