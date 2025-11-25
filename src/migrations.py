@@ -8,14 +8,14 @@ import click
 
 
 @click.group()
-def cli():
+def cli() -> None:
     """Database migration management commands."""
     pass
 
 
 @cli.command()
 @click.option("--message", "-m", required=True, help="Migration description")
-def makemigrations(message: str):
+def makemigrations(message: str) -> None:
     """Create a new migration file."""
     try:
         result = subprocess.run(
@@ -48,7 +48,7 @@ def makemigrations(message: str):
 @click.option(
     "--revision", "-r", default="head", help="Target revision (default: head)"
 )
-def migrate(revision: str):
+def migrate(revision: str) -> None:
     """Apply migrations to the database."""
     try:
         result = subprocess.run(
@@ -71,7 +71,7 @@ def migrate(revision: str):
 
 @cli.command()
 @click.option("--revision", "-r", required=True, help="Target revision to downgrade to")
-def downgrade(revision: str):
+def downgrade(revision: str) -> None:
     """Downgrade to a specific migration."""
     try:
         result = subprocess.run(
@@ -93,7 +93,7 @@ def downgrade(revision: str):
 
 
 @cli.command()
-def history():
+def history() -> None:
     """Show migration history."""
     try:
         result = subprocess.run(
@@ -114,7 +114,7 @@ def history():
 
 
 @cli.command()
-def current():
+def current() -> None:
     """Show current database revision."""
     try:
         result = subprocess.run(

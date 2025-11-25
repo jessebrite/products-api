@@ -3,7 +3,7 @@ requires = ["setuptools>=68.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "crud-api"
+name = "CRUP API with JWT Authentication"
 dynamic = ["version"]
 description = "A secure CRUD API with JWT authentication"
 readme = "README.md"
@@ -69,17 +69,21 @@ python_classes = ["Test*"]
 python_functions = ["test_*"]
 asyncio_mode = "strict"
 
-
 [tool.coverage.run]
 omit = [
     "src/migrations.py",
 ]
 
+[tool.mypy]
+python_version = "3.11"
+strict = true
+ignore_missing_imports = true
+exclude = ["src/schemas/__init__.py"]
+
 [tool.black]
 line-length = 88
 target-version = ["py38", "py39", "py310", "py311"]
 include = '\.pyi?$'
-
 
 [tool.ruff]
 line-length = 88

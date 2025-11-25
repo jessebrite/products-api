@@ -22,13 +22,13 @@ async def get_item_for_user(
     return item
 
 
-@router.post("", response_model=ItemResponse)
+@router.post("", response_model=ItemResponse, status_code=status.HTTP_201_CREATED)
 async def create_item(
     item: ItemCreate,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
     background_tasks: BackgroundTasks = BackgroundTasks(),
-):
+) -> Item:
     """
     Create a new item.
 
@@ -58,13 +58,13 @@ async def create_item(
 @router.get("", response_model=list[ItemResponse])
 async def get_items(
     user: User = Depends(get_current_user), db: Session = Depends(get_db)
-):
+) -> list[Item]:
     """Get all items for the current user."""
     return db.query(Item).filter(Item.owner_id == user.id).all()
 
 
 @router.get("/{item_id}", response_model=ItemResponse)
-async def get_item(item: Item = Depends(get_item_for_user)):
+async def get_item(item: Item = Depends(get_item_for_user)) -> Item:
     """Get a specific item by ID."""
     return item
 
@@ -76,7 +76,7 @@ async def update_item(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
     background_tasks: BackgroundTasks = BackgroundTasks(),
-):
+) -> Item:
     """
     Update an item.
 
@@ -125,7 +125,7 @@ async def delete_item(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
     background_tasks: BackgroundTasks = BackgroundTasks(),
-):
+) -> None:
     """
     Delete an item by ID.
 

@@ -2,7 +2,7 @@
 FastAPI CRUD application with security and Swagger documentation.
 """
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Response
 from fastapi.responses import RedirectResponse
 from sqlalchemy import create_engine
 
@@ -16,17 +16,12 @@ engine = create_engine(settings.database_url, connect_args={"check_same_thread":
 Base.metadata.create_all(bind=engine)
 
 # Initialize FastAPI app
-app = FastAPI(
+app: FastAPI = FastAPI(
     title=settings.app_name,
     description=settings.app_description,
     version=settings.app_version,
     debug=settings.debug,
 )
-
-# Include routers
-app.include_router(auth.router, prefix=settings.api_prefix)
-app.include_router(users.router, prefix=settings.api_prefix)
-app.include_router(items.router, prefix=settings.api_prefix)
 
 
 # Root path redirect to docs
@@ -37,6 +32,12 @@ async def root():
 
 # Health check endpoint
 @app.get("/health", tags=["Health"])
-async def get_health():
+async def get_health() -> Response:
     """Health check endpoint."""
     return health_check()
+
+
+# Include routers
+app.include_router(auth.router, prefix=settings.api_prefix)
+app.include_router(users.router, prefix=settings.api_prefix)
+app.include_router(items.router, prefix=settings.api_prefix)
