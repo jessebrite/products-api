@@ -21,7 +21,7 @@ class SecretVault:
         secret_key = vault.get_secret("SECRET_KEY")
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the vault."""
         self._secrets_cache: dict[str, Any] = {}
         self._required_secrets = [

@@ -4,6 +4,7 @@ import os
 import sys
 import time
 from pathlib import Path
+from typing import Any, Generator
 
 import pytest
 from fastapi.testclient import TestClient
@@ -55,7 +56,7 @@ Base.metadata.create_all(bind=test_engine)
 
 
 @pytest.fixture(scope="session", autouse=True)
-def set_test_db_url():
+def set_test_db_url() -> None:
     """Ensure the DATABASE_URL is set for the entire test session."""
     if os.environ.get("CI"):
         os.environ["DATABASE_URL"] = f"sqlite:///{Path('/tmp') / 'test_ci.db'}"
@@ -64,7 +65,7 @@ def set_test_db_url():
 
 
 @pytest.fixture(scope="function")
-def get_db_fixture():
+def get_db_fixture() -> Generator[pytest.Session, None, None]:
     """Fixture to get a database session for testing."""
     TestingSessionLocal = sessionmaker(
         autocommit=False, autoflush=False, bind=test_engine
@@ -77,7 +78,7 @@ def get_db_fixture():
 
 
 @pytest.fixture(scope="function", autouse=True)
-def reset_db():
+def reset_db() -> Generator[None, None, None]:
     """Reset the database before each test to ensure isolation."""
     # Clear all tables
     Base.metadata.drop_all(bind=test_engine)
@@ -88,7 +89,7 @@ def reset_db():
 
 
 @pytest.fixture(scope="function")
-def client(reset_db: None):
+def client(reset_db: Any) -> Generator[TestClient, None, None]:
     """Return a TestClient instance for making API requests.
 
     Depends on reset_db to ensure a fresh database for each test.
@@ -98,7 +99,7 @@ def client(reset_db: None):
 
 
 @pytest.fixture(scope="function", autouse=True)
-def cleanup_test_db():
+def cleanup_test_db() -> Generator[None, None, None]:
     """Clean up the test database file after all tests are done."""
     yield
     # Close any remaining connections to the database

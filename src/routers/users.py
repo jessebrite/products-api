@@ -14,7 +14,7 @@ router = APIRouter(prefix="/users", tags=["Users"])
 @router.get("/me", response_model=UserResponse)
 async def get_current_user_info(
     user: User = Depends(get_current_user), db: Session = Depends(get_db)
-):
+) -> User:
     """Get the current authenticated user's information."""
     user = db.query(User).filter(User.username == user.username).first()
     if not user:

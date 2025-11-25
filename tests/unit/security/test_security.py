@@ -10,14 +10,14 @@ from src.security.security import (
 class TestPasswordHashing:
     """Test password hashing and verification."""
 
-    def test_get_password_hash_returns_string(self):
+    def test_get_password_hash_returns_string(self) -> None:
         """Test that get_password_hash returns a string."""
         password = "secure_password_123"
         hashed = get_password_hash(password)
         assert isinstance(hashed, str)
         assert len(hashed) > 0
 
-    def test_get_password_hash_different_each_time(self):
+    def test_get_password_hash_different_each_time(self) -> None:
         """Test that get_password_hash produces different hashes each time."""
         password = "secure_password_123"
         hash1 = get_password_hash(password)
@@ -25,7 +25,7 @@ class TestPasswordHashing:
         # Bcrypt produces different hashes due to salt
         assert hash1 != hash2
 
-    def test_verify_password_correct(self):
+    def test_verify_password_correct(self) -> None:
         """Test that verify_password returns True for correct password."""
         password = "secure_password_123"
         hashed = get_password_hash(password)
@@ -38,7 +38,7 @@ class TestPasswordHashing:
         hashed = get_password_hash(password)
         assert verify_password(wrong_password, hashed) is False
 
-    def test_verify_password_empty_string(self):
+    def test_verify_password_empty_string(self) -> None:
         """Test that verify_password handles empty strings."""
         password = "secure_password_123"
         hashed = get_password_hash(password)
@@ -48,21 +48,21 @@ class TestPasswordHashing:
 class TestTokenGeneration:
     """Test JWT token creation and validation."""
 
-    def test_create_access_token_returns_string(self):
+    def test_create_access_token_returns_string(self) -> None:
         """Test that create_access_token returns a string."""
         data = {"sub": "testuser"}
         token = create_access_token(data)
         assert isinstance(token, str)
         assert len(token) > 0
 
-    def test_create_access_token_has_three_parts(self):
+    def test_create_access_token_has_three_parts(self) -> None:
         """Test that JWT token has three parts separated by dots."""
         data = {"sub": "testuser"}
         token = create_access_token(data)
         parts = token.split(".")
         assert len(parts) == 3
 
-    def test_create_access_token_with_custom_expiry(self):
+    def test_create_access_token_with_custom_expiry(self) -> None:
         """Test creating token with custom expiration."""
         from datetime import timedelta
 

@@ -4,7 +4,6 @@ This module uses a centralized vault system to manage all secrets and configurat
 Secrets are loaded from environment variables (typically from a .env file).
 
 See src/vault.py for the secret management system.
-See .env.example for the required environment variables.
 """
 
 import logging
@@ -94,7 +93,7 @@ class Settings(BaseSettings):
     debug: bool = False
     api_prefix: str = "/api/v1"
 
-    def __init__(self, **data):
+    def __init__(self, **data) -> None:
         # Read project metadata
         app_name, app_description, app_version = read_pyproject_metadata()
         # Set metadata if not explicitly provided

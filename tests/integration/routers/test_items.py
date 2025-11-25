@@ -1,37 +1,69 @@
 """Integration tests for item endpoints."""
 
+import pytest
+from fastapi.testclient import TestClient
+
 
 class TestItemCRUD:
     """Test complete CRUD operations for items."""
 
-    def test_create_item_success(self, client, auth_token):
+    @pytest.mark.parametrize(
+        "title, description, status_code",
+        [
+            ("Sample Item 1", "Description for item 1", 201),
+            ("Sample Item 2", "Description for item 2", 201),
+            ("Sample Item 3", "", 201),
+        ],
+    )
+    def test_create_item_success(
+        self,
+        client: TestClient,
+        auth_token: str,
+        title: str,
+        description: str,
+        status_code: int,
+    ):
         """Test successful item creation."""
         response = client.post(
             "/api/v1/items",
             json={
-                "title": "Test Item",
-                "description": "This is a test item",
+                "title": title,
+                "description": description,
             },
             headers={"Authorization": f"Bearer {auth_token}"},
         )
-        assert response.status_code == 200
+        assert response.status_code == status_code
         data = response.json()
-        assert data["title"] == "Test Item"
-        assert data["description"] == "This is a test item"
+        assert data["title"] == title
+        assert data["description"] == description
         assert data["is_completed"] is False
 
-    def test_create_item_without_auth(self, client):
+    @pytest.mark.parametrize(
+        "title, description, status_code",
+        [
+            ("Sample Item 1", "Description for item 1", 401),
+            ("Sample Item 2", "Description for item 2", 401),
+            ("Sample Item 3", "", 401),
+        ],
+    )
+    def test_create_item_without_auth(
+        self,
+        client: TestClient,
+        title: str,
+        description: str,
+        status_code: int,
+    ):
         """Test that creating item without auth fails."""
         response = client.post(
             "/api/v1/items",
             json={
-                "title": "Test Item",
-                "description": "This is a test item",
+                "title": title,
+                "description": description,
             },
         )
-        assert response.status_code == 401
+        assert response.status_code == status_code
 
-    def test_get_items_empty(self, client, auth_token):
+    def test_get_items_empty(self, client: TestClient, auth_token: str):
         """Test getting items when list is empty."""
         response = client.get(
             "/api/v1/items",

@@ -15,38 +15,79 @@ from tasks.worker import (
 class TestEmailTasks:
     """Test email-related background tasks."""
 
-    def test_send_welcome_email_success(self):
+    @patch("tasks.worker.logger")
+    def test_send_welcome_email_success(self, mock_logger):
         """Test that welcome email task runs without error."""
-        # Should not raise exception
         send_welcome_email("test@example.com", "testuser")
+        mock_logger.info.assert_called_once()
+        assert (
+            "Welcome email sent to test@example.com" in mock_logger.info.call_args[0][0]
+        )
 
-    def test_send_welcome_email_with_invalid_email(self):
+    @patch("tasks.worker.logger")
+    def test_send_welcome_email_with_invalid_email(self, mock_logger):
         """Test welcome email task with invalid email."""
-        # Should handle gracefully without raising
         send_welcome_email("invalid", "testuser")
+        mock_logger.info.assert_called_once()
+        assert "Welcome email sent to invalid" in mock_logger.info.call_args[0][0]
 
-    def test_send_batch_email_success(self):
+    @patch("tasks.worker.logger")
+    def test_send_welcome_email_exception_handling(self, mock_logger):
+        """Test welcome email handles exceptions."""
+        mock_logger.info.side_effect = Exception("Log error")
+        send_welcome_email("test@example.com", "testuser")
+        mock_logger.error.assert_called_once()
+        assert "Failed to send welcome email" in mock_logger.error.call_args[0][0]
+
+    @patch("tasks.worker.logger")
+    def test_send_batch_email_success(self, mock_logger):
         """Test batch email task with multiple recipients."""
         recipients = ["user1@example.com", "user2@example.com", "user3@example.com"]
         send_batch_email(recipients, "Test Subject", "Test Body")
+        mock_logger.info.assert_called_once()
+        assert "Batch email sent to 3 recipients" in mock_logger.info.call_args[0][0]
 
-    def test_send_batch_email_empty_list(self):
+    @patch("tasks.worker.logger")
+    def test_send_batch_email_empty_list(self, mock_logger):
         """Test batch email with empty recipient list."""
         send_batch_email([], "Subject", "Body")
+        mock_logger.info.assert_called_once()
+        assert "Batch email sent to 0 recipients" in mock_logger.info.call_args[0][0]
+
+    @patch("tasks.worker.logger")
+    def test_send_batch_email_exception_handling(self, mock_logger):
+        """Test batch email handles exceptions."""
+        mock_logger.info.side_effect = Exception("Log error")
+        send_batch_email(["test@example.com"], "Subject", "Body")
+        mock_logger.error.assert_called_once()
+        assert "Failed to send batch emails" in mock_logger.error.call_args[0][0]
 
 
 class TestLoggingTasks:
     """Test logging-related background tasks."""
 
-    def test_log_user_action_basic(self):
+    @patch("tasks.worker.logger")
+    def test_log_user_action_basic(self, mock_logger):
         """Test basic user action logging."""
         log_user_action("testuser", "LOGIN")
+        mock_logger.info.assert_called_once()
+        assert (
+            "User 'testuser' performed action 'LOGIN'"
+            in mock_logger.info.call_args[0][0]
+        )
 
-    def test_log_user_action_with_details(self):
+    @patch("tasks.worker.logger")
+    def test_log_user_action_with_details(self, mock_logger):
         """Test user action logging with additional details."""
         log_user_action("testuser", "CREATE_ITEM", "title: Test Item")
+        mock_logger.info.assert_called_once()
+        assert (
+            "User 'testuser' performed action 'CREATE_ITEM' - title: Test Item"
+            in mock_logger.info.call_args[0][0]
+        )
 
-    def test_log_user_action_various_actions(self):
+    @patch("tasks.worker.logger")
+    def test_log_user_action_various_actions(self, mock_logger):
         """Test logging various action types."""
         actions = [
             ("REGISTER", "email: test@example.com"),
@@ -58,37 +99,86 @@ class TestLoggingTasks:
 
         for action, details in actions:
             log_user_action("testuser", action, details)
+        assert mock_logger.info.call_count == 5
+
+    @patch("tasks.worker.logger")
+    def test_log_user_action_exception_handling(self, mock_logger):
+        """Test logging task handles exceptions."""
+        mock_logger.info.side_effect = Exception("Log error")
+        log_user_action("testuser", "LOGIN")
+        mock_logger.error.assert_called_once()
+        assert (
+            "Failed to log user action for testuser"
+            in mock_logger.error.call_args[0][0]
+        )
 
 
 class TestNotificationTasks:
     """Test notification-related background tasks."""
 
-    def test_send_item_notification_created(self):
+    @patch("tasks.worker.logger")
+    def test_send_item_notification_created(self, mock_logger):
         """Test item creation notification."""
         send_item_notification("user@example.com", "testuser", "New Item", "created")
+        mock_logger.info.assert_called_once()
+        assert (
+            "Your item 'New Item' has been created" in mock_logger.info.call_args[0][0]
+        )
 
-    def test_send_item_notification_updated(self):
+    @patch("tasks.worker.logger")
+    def test_send_item_notification_updated(self, mock_logger):
         """Test item update notification."""
         send_item_notification(
             "user@example.com", "testuser", "Updated Item", "updated"
         )
+        mock_logger.info.assert_called_once()
+        assert (
+            "Your item 'Updated Item' has been updated"
+            in mock_logger.info.call_args[0][0]
+        )
 
-    def test_send_item_notification_completed(self):
+    @patch("tasks.worker.logger")
+    def test_send_item_notification_completed(self, mock_logger):
         """Test item completion notification."""
         send_item_notification(
             "user@example.com", "testuser", "Completed Task", "completed"
         )
+        mock_logger.info.assert_called_once()
+        assert (
+            "You marked 'Completed Task' as completed"
+            in mock_logger.info.call_args[0][0]
+        )
 
-    def test_send_item_notification_deleted(self):
+    @patch("tasks.worker.logger")
+    def test_send_item_notification_deleted(self, mock_logger):
         """Test item deletion notification."""
         send_item_notification(
             "user@example.com", "testuser", "Deleted Item", "deleted"
         )
+        mock_logger.info.assert_called_once()
+        assert (
+            "Your item 'Deleted Item' has been deleted"
+            in mock_logger.info.call_args[0][0]
+        )
 
-    def test_send_item_notification_invalid_type(self):
+    @patch("tasks.worker.logger")
+    def test_send_item_notification_invalid_type(self, mock_logger):
         """Test notification with invalid type falls back to default."""
         send_item_notification(
             "user@example.com", "testuser", "Some Item", "unknown_type"
+        )
+        mock_logger.info.assert_called_once()
+        assert "Action on item 'Some Item'" in mock_logger.info.call_args[0][0]
+
+    @patch("tasks.worker.logger")
+    def test_send_item_notification_exception_handling(self, mock_logger):
+        """Test notification task handles exceptions."""
+        mock_logger.info.side_effect = Exception("Log error")
+        send_item_notification("user@example.com", "testuser", "Item", "created")
+        mock_logger.error.assert_called_once()
+        assert (
+            "Failed to send notification to user@example.com"
+            in mock_logger.error.call_args[0][0]
         )
 
 
@@ -108,33 +198,49 @@ class TestCompletionTasks:
 class TestMaintenanceTasks:
     """Test maintenance and cleanup tasks."""
 
-    def test_cleanup_old_data_success(self):
+    @patch("tasks.worker.logger")
+    def test_cleanup_old_data_success(self, mock_logger):
         """Test data cleanup task."""
         cleanup_old_data()
+        assert mock_logger.info.call_count == 2  # start and completion logs
 
-    def test_cleanup_old_data_idempotent(self):
+    @patch("tasks.worker.logger")
+    def test_cleanup_old_data_idempotent(self, mock_logger):
         """Test that cleanup can run multiple times safely."""
         cleanup_old_data()
         cleanup_old_data()  # Should not raise
+        assert mock_logger.info.call_count == 4  # 2 logs per run
+
+    @patch("tasks.worker.logger")
+    def test_cleanup_old_data_exception_handling(self, mock_logger):
+        """Test cleanup handles exceptions."""
+        mock_logger.info.side_effect = Exception("Log error")
+        cleanup_old_data()
+        mock_logger.error.assert_called_once()
+        assert "Failed to cleanup old data" in mock_logger.error.call_args[0][0]
 
 
 class TestTaskExceptionHandling:
     """Test that tasks handle exceptions gracefully."""
 
-    def test_send_email_with_exception(self):
+    @patch("tasks.worker.logger")
+    def test_send_email_with_exception(self, mock_logger):
         """Test email task handles unexpected errors."""
         # Even if there's an error, the task should not crash the API
-        with patch("src.tasks.worker.logger") as mock_logger:
-            send_welcome_email("test@example.com", "user")
-            mock_logger.error.assert_not_called()
-            # Task completes without propagating exceptions
+        send_welcome_email("test@example.com", "user")
+        # Since logger is mocked, no actual error occurs, but task completes
+        mock_logger.info.assert_called_once()
 
-    def test_logging_task_with_exception(self):
+    @patch("tasks.worker.logger")
+    def test_logging_task_with_exception(self, mock_logger):
         """Test logging task handles errors."""
         # Task should complete even if logging fails
         log_user_action("user", "ACTION", "details")
+        mock_logger.info.assert_called_once()
 
-    def test_notification_with_exception(self):
+    @patch("tasks.worker.logger")
+    def test_notification_with_exception(self, mock_logger):
         """Test notification task handles errors."""
         # Task should complete gracefully
         send_item_notification("email@test.com", "user", "item", "created")
+        mock_logger.info.assert_called_once()

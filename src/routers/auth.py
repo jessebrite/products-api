@@ -20,12 +20,14 @@ from tasks import log_user_action, send_welcome_email
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 
-@router.post("/register", response_model=UserResponse)
+@router.post(
+    "/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED
+)
 async def register(
     user: UserCreate,
     db: Session = Depends(get_db),
     background_tasks: BackgroundTasks = BackgroundTasks(),
-):
+) -> User:
     """
     Register a new user.
 
@@ -71,7 +73,7 @@ async def login(
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: Session = Depends(get_db),
     background_tasks: BackgroundTasks = BackgroundTasks(),
-):
+) -> dict[str, str]:
     """
     Login endpoint to get JWT access token.
 

@@ -1,10 +1,11 @@
 """Shared fixtures for tests."""
 
 import pytest
+from fastapi.testclient import TestClient
 
 
 @pytest.fixture
-def auth_token(client):
+def auth_token(client: TestClient):
     """Create a test user and return their auth token."""
     # Register user
     client.post(
@@ -25,7 +26,7 @@ def auth_token(client):
 
 
 @pytest.fixture
-def test_user_credentials():
+def test_user_credentials() -> dict[str, str]:
     """Return test user credentials."""
     return {
         "username": "testuser",
@@ -35,7 +36,7 @@ def test_user_credentials():
 
 
 @pytest.fixture
-def admin_user_credentials():
+def admin_user_credentials() -> dict[str, str]:
     """Return admin user credentials."""
     return {
         "username": "admin",

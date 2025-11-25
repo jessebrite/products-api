@@ -2,11 +2,13 @@
 
 import os
 
+from fastapi.testclient import TestClient
+
 
 class TestAuthenticationFlow:
     """Test complete authentication workflows."""
 
-    def test_register_and_login_flow(self, client):
+    def test_register_and_login_flow(self, client: TestClient):
         """Test full registration and login flow."""
         # Register a user
         register_response = client.post(
@@ -17,7 +19,7 @@ class TestAuthenticationFlow:
                 "password": "secure_password_123",
             },
         )
-        assert register_response.status_code == 200
+        assert register_response.status_code == 201
         user_data = register_response.json()
         assert user_data["username"] == "john_doe"
         assert user_data["email"] == "john@example.com"
@@ -32,7 +34,7 @@ class TestAuthenticationFlow:
         assert "access_token" in token_data
         assert token_data["token_type"] == "bearer"
 
-    def test_register_user_success(self, client):
+    def test_register_user_success(self, client: TestClient):
         """Test successful user registration."""
         response = client.post(
             "/api/v1/auth/register",
@@ -42,14 +44,14 @@ class TestAuthenticationFlow:
                 "password": "password123",
             },
         )
-        assert response.status_code == 200
+        assert response.status_code == 201
         data = response.json()
         assert data["username"] == "new_user"
         assert data["email"] == "new@example.com"
         assert data["is_active"] is True
         assert "hashed_password" not in data  # Should not expose hashed password
 
-    def test_register_duplicate_username(self, client):
+    def test_register_duplicate_username(self, client: TestClient):
         """Test that registering with duplicate username fails."""
         # Register first user
         client.post(
@@ -73,7 +75,7 @@ class TestAuthenticationFlow:
         assert response.status_code == 400
         assert "Username already exists" in response.json()["detail"]
 
-    def test_register_duplicate_email(self, client):
+    def test_register_duplicate_email(self, client: TestClient):
         """Test that registering with duplicate email fails."""
         # Register first user
         client.post(
@@ -97,7 +99,7 @@ class TestAuthenticationFlow:
         assert response.status_code == 400
         assert "Email already exists" in response.json()["detail"]
 
-    def test_login_success(self, client):
+    def test_login_success(self, client: TestClient):
         """Test successful login."""
         # Register user first
         client.post(
@@ -119,7 +121,7 @@ class TestAuthenticationFlow:
         assert "access_token" in data
         assert data["token_type"] == "bearer"
 
-    def test_login_invalid_credentials(self, client):
+    def test_login_invalid_credentials(self, client: TestClient):
         """Test login with invalid credentials."""
         print(f"DB URL====> {os.environ['DATABASE_URL']}")
         response = client.post(
@@ -129,7 +131,7 @@ class TestAuthenticationFlow:
         assert response.status_code == 401
         assert "Incorrect username or password" in response.json()["detail"]
 
-    def test_login_wrong_password(self, client):
+    def test_login_wrong_password(self, client: TestClient):
         """Test login with wrong password."""
         # Register user
         client.post(

@@ -44,7 +44,6 @@ def send_welcome_email(email: str, username: str) -> None:
             f"at {datetime.utcnow().isoformat()}"
         )
         logger.info(log_message)
-        print(log_message)
 
         # Simulated email sending logic:
         # - Connect to email service
@@ -73,7 +72,6 @@ def log_user_action(username: str, action: str, details: Optional[str] = None) -
             f"at {timestamp}"
         )
         logger.info(log_message)
-        print(log_message)
 
         # TODO: Store in audit log database table or external logging service
         # - Insert into audit_logs table
@@ -116,7 +114,6 @@ def send_item_notification(
             f"at {datetime.utcnow().isoformat()}"
         )
         logger.info(log_msg)
-        print(log_msg)
 
         # TODO: Send actual notification
         # - Email notification
@@ -142,7 +139,6 @@ def process_item_completion(item_id: int, username: str, item_title: str) -> Non
             f" '{username}' at {datetime.utcnow().isoformat()}"
         )
         logger.info(log_message)
-        print(log_message)
 
         # TODO: Add logic for item completion
         # - Update item completion statistics
@@ -169,7 +165,6 @@ def send_batch_email(recipient_list: list, subject: str, body: str) -> None:
             f"(Subject: '{subject}') at {datetime.utcnow().isoformat()}"
         )
         logger.info(log_message)
-        print(log_message)
 
         # TODO: Send actual batch emails
         # - Use SendGrid, AWS SES, or similar
@@ -190,7 +185,6 @@ def cleanup_old_data() -> None:
             f"🧹 [TASK] Data cleanup started at {datetime.utcnow().isoformat()}"
         )
         logger.info(log_message)
-        print(log_message)
 
         # TODO: Add cleanup logic
         # - Delete old logs
@@ -202,7 +196,6 @@ def cleanup_old_data() -> None:
             f"✓ [TASK] Data cleanup completed at {datetime.utcnow().isoformat()}"
         )
         logger.info(cleanup_message)
-        print(cleanup_message)
 
     except Exception as e:
         logger.error(f"Failed to cleanup old data: {e}")

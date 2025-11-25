@@ -7,14 +7,14 @@ from src import migrations
 
 
 @pytest.fixture
-def runner():
+def runner() -> CliRunner:
     return CliRunner()
 
 
 @patch("src.migrations.subprocess.run")
 @patch("src.migrations.click.echo")
 @patch("src.migrations.click.secho")
-def test_makemigrations_success(mock_secho, mock_echo, mock_run, runner):
+def test_makemigrations_success(mock_secho, mock_echo, mock_run, runner) -> None:
     mock_run.return_value = MagicMock(
         returncode=0, stdout="migration created", stderr=""
     )
@@ -30,7 +30,9 @@ def test_makemigrations_success(mock_secho, mock_echo, mock_run, runner):
 @patch("src.migrations.click.echo")
 @patch("src.migrations.click.secho")
 @patch("src.migrations.sys.exit", side_effect=SystemExit(1))
-def test_makemigrations_failure(mock_exit, mock_secho, mock_echo, mock_run, runner):
+def test_makemigrations_failure(
+    mock_exit, mock_secho, mock_echo, mock_run, runner
+) -> None:
     mock_run.return_value = MagicMock(returncode=1, stdout="", stderr="error details")
     result = runner.invoke(migrations.cli, ["makemigrations", "-m", "test message"])
 
@@ -75,7 +77,7 @@ def test_other_commands_success_failure(
     args,
     message_success,
     message_failure,
-):
+) -> None:
     # Success case
     mock_run.return_value = MagicMock(
         returncode=0, stdout=f"{command} success output", stderr=""
@@ -119,7 +121,7 @@ def test_other_commands_success_failure(
 @patch("src.migrations.sys.exit", side_effect=SystemExit(1))
 def test_other_commands_exception(
     mock_exit, mock_secho, mock_run, runner, command, args
-):
+) -> None:
     result = runner.invoke(migrations.cli, [command] + args)
 
     mock_secho.assert_called_with("✗ Error: subproc error", fg="red")
