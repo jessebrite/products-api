@@ -1,21 +1,8 @@
 """Test script to verify TestClient with dependency overrides."""
 
-import pytest
-from conftest import app
-from fastapi.testclient import TestClient
 
-from database import get_db
-
-
-@pytest.mark.skip(reason="Failing in CI. Needs investigation.")
-def test_client_setup():
+def test_client_setup(client):
     """Test that TestClient is set up with the test database dependency override."""
-    # Check override
-    print("get_db in app.dependency_overrides:", get_db in app.dependency_overrides)
-
-    # Create test client
-    client = TestClient(app)
-
     # Try to register a user
     response = client.post(
         "/api/v1/auth/register",

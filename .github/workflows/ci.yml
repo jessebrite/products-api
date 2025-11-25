@@ -4,13 +4,11 @@ on:
   push:
     branches: [ main ]
   pull_request:
+    branches: [ main ]
 
 jobs:
   lint:
     name: Lint (Python ${{ matrix.python-version }})
-
-    env:
-      CI: true
 
     runs-on: ubuntu-latest
     strategy:
@@ -100,8 +98,6 @@ jobs:
           rm -f test_ci.db
 
       - name: Run integration tests
-        env:
-          CI: true
         timeout-minutes: 8
         run: |
           echo "Starting integration tests at $(date)"

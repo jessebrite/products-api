@@ -1,5 +1,7 @@
 """Integration tests for authentication endpoints."""
 
+import os
+
 
 class TestAuthenticationFlow:
     """Test complete authentication workflows."""
@@ -119,6 +121,7 @@ class TestAuthenticationFlow:
 
     def test_login_invalid_credentials(self, client):
         """Test login with invalid credentials."""
+        print(f"DB URL====> {os.environ['DATABASE_URL']}")
         response = client.post(
             "/api/v1/auth/token",
             data={"username": "nonexistent", "password": "wrong_password"},
