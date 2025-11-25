@@ -180,11 +180,11 @@ def test_full_auth_flow(self, client):
     """Test registration and login workflow."""
     # Arrange
     user_data = {"username": "test", "email": "test@example.com", "password": "pass"}
-    
+
     # Act
     register_response = client.post("/api/v1/auth/register", json=user_data)
     login_response = client.post("/api/v1/auth/token", data={...})
-    
+
     # Assert
     assert register_response.status_code == 200
     assert login_response.status_code == 200
