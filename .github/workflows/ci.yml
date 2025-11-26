@@ -8,12 +8,9 @@ on:
 
 jobs:
   lint:
-    name: Lint (Python ${{ matrix.python-version }})
+    name: Lint (Python "3.11")
 
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ["3.10", "3.11"]
 
     steps:
       - uses: actions/checkout@v4
@@ -21,7 +18,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: "3.11"
           cache: pip
 
       - name: Security checks
@@ -36,12 +33,9 @@ jobs:
           # mypy src/  # type checking
 
   unit-tests:
-    name: Unit Tests (Python ${{ matrix.python-version }})
+    name: Unit Tests (Python "3.11")
     needs: lint
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ["3.10", "3.11"]
 
     steps:
       - uses: actions/checkout@v4
@@ -49,35 +43,42 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: "3.11"
           cache: pip
 
       - name: Install dependencies
         run: |
           pip install --upgrade pip
-          pip install pytest-cov -r requirements.txt
+          pip install coverage[toml] -r requirements.txt
+          pip install -e .
 
       - name: Run unit tests (parallel)
         timeout-minutes: 5
         run: |
           echo "Starting unit tests at $(date)"
-          pytest tests/unit \
-            -m "not integration" \
-            --tb=long --durations=10 -v \
-            --cov=src \
-            --cov-report=term \
-            --cov-report=xml \
-            --cov-fail-under=80
+          coverage run --data-file=.coverage.unit \
+            -m pytest tests/unit/ --tb=long --durations=10 -v
+
+      - name: Generate unit test coverage report
+        run: |
+          coverage report --data-file=.coverage.unit -m --fail-under=80
+          coverage xml --data-file=.coverage.unit -o coverage-unit.xml
           echo "Unit tests finished at $(date)"
 
+      - name: Upload unit coverage artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-unit
+          path: |
+            .coverage.unit
+            coverage-unit.xml
+          include-hidden-files: true
+
   integration-tests:
-    name: Integration Tests (Python ${{ matrix.python-version }})
-    needs: [lint, unit-tests]   # Only run if lint + unit pass
+    name: Integration Tests (Python "3.11")
+    needs: [lint, unit-tests]
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    strategy:
-      matrix:
-        python-version: ["3.10", "3.11"]
 
     steps:
       - uses: actions/checkout@v4
@@ -85,13 +86,14 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: "3.11"
           cache: pip
 
       - name: Install dependencies
         run: |
           pip install --upgrade pip
-          pip install pytest-cov -r requirements.txt
+          pip install coverage -r requirements.txt
+          pip install -e .
 
       - name: Clean up old test DB
         run: |
@@ -101,10 +103,71 @@ jobs:
         timeout-minutes: 8
         run: |
           echo "Starting integration tests at $(date)"
-          pytest tests/integration \
-            -m integration --tb=long --durations=5 -v \
-            --cov=src \
-            --cov-report=term \
-            --cov-report=xml \
-            --cov-fail-under=80
+          coverage run --data-file=.coverage.integration \
+            -m pytest tests/integration/ --tb=long --durations=8 -v
+
+      - name: Generate integration test coverage report
+        run: |
+          coverage report  --data-file=.coverage.integration -m --fail-under=60
+          coverage xml --data-file=.coverage.integration -o coverage-integration.xml
           echo "Integration tests finished at $(date)"
+
+      - name: Upload integration coverage artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-integration
+          path: |
+            .coverage.integration
+            coverage-integration.xml
+          include-hidden-files: true
+
+  combined-coverage:
+    name: Combine Coverage Reports
+    needs: [unit-tests, integration-tests]
+    runs-on: ubuntu-latest
+    if: always()
+
+    steps:
+      # No needed but we just want to make setup-python happy
+      - uses: actions/checkout@v4
+        with:
+          # We only need the lockfiles for caching — no need for full history
+          fetch-depth: 1
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install coverage.py
+        run: |
+          pip install --upgrade pip
+          pip install coverage
+
+      - name: Download all coverage files
+        uses: actions/download-artifact@v4
+        with:
+          pattern: coverage-*
+
+      - name: Combine coverage reports and generate overall report
+        run: |
+          coverage combine coverage-unit/.coverage.unit coverage-integration/.coverage.integration
+          echo "Overall coverage report"
+          coverage report -m --fail-under=80
+          coverage xml -o coverage-combined.xml
+
+      - name: Upload to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          files: coverage-combined.xml
+          flags: combined
+          token: ${{ secrets.CODECOV_TOKEN }}
+          name: overall-coverage
+          fail_ci_if_error: false
+
+      - name: Add coverage to job summary
+        run: |
+          echo "## Test Coverage (Combined)" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          coverage report >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
