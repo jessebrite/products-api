@@ -2,8 +2,6 @@ import pytest
 
 from main import app
 
-# client = TestClient(app)
-
 
 def test_swagger_docs_accessible(client):
     response = client.get("/docs")
