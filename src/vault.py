@@ -38,6 +38,7 @@ class SecretVault:
             "AWS_ACCESS_KEY_ID",
             "AWS_SECRET_ACCESS_KEY",
             "STRIPE_API_KEY",
+            "ACCESS_TOKEN_EXPIRE_MINUTES",
         ]
         self._accessed_secrets: dict[str, bool] = {}
 
