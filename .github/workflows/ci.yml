@@ -8,64 +8,63 @@ on:
 
 jobs:
   lint:
-    name: Lint (Python "3.11")
-
+    name: Lint (Python 3.11)
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
         with:
-          python-version: "3.11"
-          cache: pip
+          enable-cache: true
+          version: latest
 
-      - name: Security checks
+      - name: Install linting tools
         run: |
-          echo "Upgrade and install security tools"
-          pip install --upgrade pip
-          pip install pip-audit ruff semgrep mypy
-          echo "Running security checks"
-          pip-audit --desc --fix  # auto-fix if possible
-          ruff check . --output-format=github   # GitHub annotations
-          semgrep ci --config p/python --config p/fastapi
-          # mypy src/  # type checking
+          uv tool install ruff
+          uv tool install pip-audit
+          uv tool install semgrep
+          uv tool install semgrep
 
-  unit-tests:
-    name: Unit Tests (Python "3.11")
+      - name: Security & linting checks
+        run: |
+          echo "Running linting and auditing checks"
+          pip-audit --desc --fix
+          ruff check . --output-format=github
+          semgrep ci --config p/python --config p/fastapi
+
+  unit-test:
+    name: Unit Tests (Python 3.11)
     needs: lint
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
         with:
-          python-version: "3.11"
-          cache: pip
+          enable-cache: true
+          version: latest
 
       - name: Install dependencies
-        run: |
-          pip install --upgrade pip
-          pip install coverage[toml] -r requirements.txt
-          pip install -e .
+        run: uv sync --all-extras --dev
 
-      - name: Run unit tests (parallel)
+      - name: Run unit tests
         timeout-minutes: 5
         run: |
           echo "Starting unit tests at $(date)"
-          coverage run --data-file=.coverage.unit \
+          uv run coverage run --data-file=.coverage.unit \
             -m pytest tests/unit/ --tb=long --durations=10 -v
 
       - name: Generate unit test coverage report
         run: |
-          coverage report --data-file=.coverage.unit -m --fail-under=80
-          coverage xml --data-file=.coverage.unit -o coverage-unit.xml
+          uv run coverage report --data-file=.coverage.unit -m --fail-under=80
+          uv run coverage xml --data-file=.coverage.unit -o coverage-unit.xml
           echo "Unit tests finished at $(date)"
 
-      - name: Upload unit coverage artifacts
+      - name: Upload unit test coverage artifacts
         uses: actions/upload-artifact@v4
         with:
           name: coverage-unit
@@ -74,42 +73,45 @@ jobs:
             coverage-unit.xml
           include-hidden-files: true
 
+
   integration-tests:
     name: Integration Tests (Python "3.11")
-    needs: [lint, unit-tests]
+    needs: [lint, unit-test]
     runs-on: ubuntu-latest
     timeout-minutes: 10
-
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
         with:
-          python-version: "3.11"
-          cache: pip
+          enable-cache: true
+          version: latest
 
       - name: Install dependencies
-        run: |
-          pip install --upgrade pip
-          pip install coverage -r requirements.txt
-          pip install -e .
+        run: uv sync --all-extras --dev
+
+      - name: Download integration test coverage artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-integration
 
       - name: Clean up old test DB
         run: |
           rm -f test_ci.db
 
       - name: Run integration tests
-        timeout-minutes: 8
+        timeout-minutes: 10
         run: |
           echo "Starting integration tests at $(date)"
-          coverage run --data-file=.coverage.integration \
+          uv run coverage run --data-file=.coverage.integration \
             -m pytest tests/integration/ --tb=long --durations=8 -v
 
-      - name: Generate integration test coverage report
+      - name: Generate coverage reports
         run: |
-          coverage report  --data-file=.coverage.integration -m --fail-under=60
-          coverage xml --data-file=.coverage.integration -o coverage-integration.xml
+          echo "Integration coverage:"
+          uv run coverage report --data-file=.coverage.integration -m --fail-under=60
+          uv run coverage xml --data-file=.coverage.integration -o coverage-integration.xml
           echo "Integration tests finished at $(date)"
 
       - name: Upload integration coverage artifacts
@@ -123,7 +125,7 @@ jobs:
 
   combined-coverage:
     name: Combine Coverage Reports
-    needs: [unit-tests, integration-tests]
+    needs: [unit-test, integration-tests]
     runs-on: ubuntu-latest
     if: always()
 
@@ -133,30 +135,26 @@ jobs:
         with:
           # We only need the lockfiles for caching — no need for full history
           fetch-depth: 1
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-          cache: pip
 
-      - name: Install coverage.py
-        run: |
-          pip install --upgrade pip
-          pip install coverage
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          version: latest
 
       - name: Download all coverage files
         uses: actions/download-artifact@v4
         with:
           pattern: coverage-*
 
-      - name: Combine coverage reports and generate overall report
+      - name: Combine & upload coverage
         run: |
-          coverage combine coverage-unit/.coverage.unit coverage-integration/.coverage.integration
+          uv run coverage combine .coverage.unit .coverage.integration
           echo "Overall coverage report"
-          coverage report -m --fail-under=80
-          coverage xml -o coverage-combined.xml
+          uv run coverage report -m --fail-under=80
+          uv run coverage xml -o coverage-combined.xml
 
-      - name: Upload to Codecov
+      - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
         with:
           files: coverage-combined.xml
@@ -165,9 +163,10 @@ jobs:
           name: overall-coverage
           fail_ci_if_error: false
 
-      - name: Add coverage to job summary
+      - name: Add coverage summary
+        if: always()
         run: |
           echo "## Test Coverage (Combined)" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-          coverage report >> $GITHUB_STEP_SUMMARY
+          uv run coverage report >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY

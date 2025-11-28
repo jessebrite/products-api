@@ -22,53 +22,55 @@ clean:
 
 ## Install project dependencies
 install:
-	pip install -e .[all]
+	uv sync --all-extras --dev
 
 ## Run unit tests only
 unit:
-	pytest tests/unit --tb=long maxfail=1 -vv
+	uv run pytest tests/unit --tb=long maxfail=1 -vv
 
 integration:
-	pytest tests/integration --tb=long maxfail=1 -vv
+	uv run pytest tests/integration --tb=long maxfail=1 -vv
 
 ## Run unit tests with coverage
 covunit:
-	coverage run --data-file=.coverage.unit \
+	uv run coverage run --data-file=.coverage.unit \
 		-m pytest tests/unit/ --tb=long --durations=8 -v
-	coverage report --data-file=.coverage.unit -m
+	uv run coverage report --data-file=.coverage.unit -m
 
 ## Run integration tests with coverage
 covint:
-	coverage run --data-file=.coverage.integration \
+	uv run coverage run --data-file=.coverage.integration \
         -m pytest tests/integration/ --tb=long --durations=8 -v
-	coverage report --data-file=.coverage.integration -m
+	uv run coverage report --data-file=.coverage.integration -m
 
 ## Run the current code coverage
 cov:
-	coverage report -m
+	uv run coverage report -m
 
 ## Combine coverage reports and generate HTML report
 coverage: covunit covint
-	coverage combine .coverage.unit .coverage.integration
-	coverage report -m
-	coverage html
-	coverage xml -o coverage-combined.xml
+	echo "removing old .coverage to avoid any gotcha"
+	rm -f .coverage
+	uv run coverage combine .coverage.*
+	uv run coverage report -m
+	uv run coverage html
+	uv run coverage xml -o coverage-combined.xml
 
 ## Run all tests (unit + integration)
 test:
-	pytest --tb=long --maxfail=1 -vv --disable-warnings
+	uv run pytest --tb=long --maxfail=1 -vv --disable-warnings
 
 ## Lint the code using ruff
 lint:
-	ruff check .
+	uv run ruff check .
 
 ## Format the code using ruff
 format:
-	ruff format . && ruff check --fix .
+	uv run ruff format . && uv run ruff check --fix .
 
 ## Run database migrations using alembic
 migrate:
-	alembic upgrade head
+	uv run alembic upgrade head
 
 ## Build the Docker image and start containers
 docker-up:
