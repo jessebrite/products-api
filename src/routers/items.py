@@ -1,6 +1,7 @@
 """Item CRUD routes."""
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from database import get_db
@@ -16,7 +17,9 @@ async def get_item_for_user(
     item_id: int, user: User = Depends(get_current_user), db: Session = Depends(get_db)
 ) -> Item:
     """Get an item by ID for the current user, or raise 404."""
-    item = db.query(Item).filter(Item.id == item_id, Item.owner_id == user.id).first()
+    stmt = select(Item).where(Item.id == item_id, Item.owner_id == user.id)
+    item = db.scalars(stmt).first()
+    # item = db.query(Item).filter(Item.id == item_id, Item.owner_id == user.id).first()
     if not item:
         raise HTTPException(status_code=404, detail="Item not found")
     return item
@@ -60,7 +63,8 @@ async def get_items(
     user: User = Depends(get_current_user), db: Session = Depends(get_db)
 ) -> list[Item]:
     """Get all items for the current user."""
-    return db.query(Item).filter(Item.owner_id == user.id).all()
+    stmt = select(Item).where(Item.owner_id == user.id)
+    return db.execute(stmt).scalars().all()
 
 
 @router.get("/{item_id}", response_model=ItemResponse)

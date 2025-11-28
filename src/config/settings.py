@@ -111,10 +111,8 @@ class Settings(BaseSettings):
         if self.algorithm:
             self.algorithm = vault.get_optional_secret("ALGORITHM") or self.algorithm
 
-        if self.access_token_expire_minutes:
-            minutes_str = vault.get_optional_secret("ACCESS_TOKEN_EXPIRE_MINUTES")
-            if minutes_str:
-                self.access_token_expire_minutes = int(minutes_str)
+        if minutes_str := vault.get_optional_secret("ACCESS_TOKEN_EXPIRE_MINUTES"):
+            self.access_token_expire_minutes = int(minutes_str)
 
 
 # Global settings instance
