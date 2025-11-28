@@ -213,3 +213,6 @@ Tests are designed to run in CI/CD pipelines:
 - Exit code 1 if any test fails
 - Warnings output for deprecations (non-blocking)
 - Comprehensive error messages for debugging
+
+**Coverage**
+[![codecov](https://codecov.io/gh/jessebrite/products-api/graph/badge.svg)](https://codecov.io/gh/jessebrite/products-api)
