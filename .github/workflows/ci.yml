@@ -49,7 +49,7 @@ jobs:
           version: latest
 
       - name: Install dependencies
-        run: uv sync --all-extras --dev
+        run: uv sync --all-extras --dev --locked
 
       - name: Run unit tests
         timeout-minutes: 5
@@ -73,7 +73,6 @@ jobs:
             coverage-unit.xml
           include-hidden-files: true
 
-
   integration-tests:
     name: Integration Tests (Python "3.11")
     needs: [lint, unit-test]
@@ -89,12 +88,7 @@ jobs:
           version: latest
 
       - name: Install dependencies
-        run: uv sync --all-extras --dev
-
-      - name: Download integration test coverage artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: coverage-integration
+        run: uv sync --all-extras --dev --locked
 
       - name: Clean up old test DB
         run: |
@@ -147,9 +141,12 @@ jobs:
         with:
           pattern: coverage-*
 
+      - name: List files for debugging
+        run: ls -la
+
       - name: Combine & upload coverage
         run: |
-          uv run coverage combine .coverage.unit .coverage.integration
+          uv run coverage combine coverage-unit/.coverage.unit coverage-integration/.coverage.integration
           echo "Overall coverage report"
           uv run coverage report -m --fail-under=80
           uv run coverage xml -o coverage-combined.xml

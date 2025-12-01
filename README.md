@@ -17,92 +17,47 @@ A simple Python project starter template.
 
 ### Prerequisites
 
-- Python 3.8 or higher
+- Python 3.11 or higher
 
-### Installation
+## Setting up the project
 
-1. Create a virtual environment:
-   ```bash
-   python -m venv venv
-   ```
+This project uses **uv** for everything (virtual environments, package management, and even pre-commit hooks).
 
-2. Activate the virtual environment:
-   - **Windows:**
-     ```bash
-     venv\Scripts\activate
-     ```
-   - **macOS/Linux:**
-     ```bash
-     source venv/bin/activate
-     ```
+### 1. First-time setup (or when cloning on a new machine)
 
-3. Install dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
+```bash
+# Install uv if you don’t have it yet
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Or visit (https://docs.astral.sh/uv/getting-started/installation/) for the Windows equivalent
+
+# Clone + enter the repo
+git clone https://github.com/jessebrite/products-api.git
+git checkout products-api
+
+# Create the venv and install dependencies + dev tools (including pre-commit)
+uv sync --all-extras --dev && uv run pre-commit install
+```
 
 ### Running the Project
 
 ```bash
-python src/main.py
+# change directory into src and run uvicorn from there
+cd src && uv run uvicorn main:app --reload
 ```
 
 ### Running Tests
 
 ```bash
-pytest tests/
+uv run pytest tests/
+
+# There's a make command that helps you format, run all tests and generate test coverage in one go. Make sure you have make installed on your system and run the followinf:
+make ci
 ```
-
-## Development
-
-Make sure to activate the virtual environment before working on the project.
-
-## How to Check in Your Code Changes
-
-Follow these steps to properly check in your code changes:
-
-1. Pull the latest changes from the main branch:
-    ```bash
-    git pull origin main
-    ```
-
-2. Create a new branch for your changes:
-    ```bash
-    git checkout -b <branch>
-    ```
-
-3. Make your code changes.
-
-4. Once your changes are done, format your code with:
-    ```bash
-    ruff format .
-    ```
-
-5. Check your code for linting errors:
-    ```bash
-    ruff check .
-    ```
-
-6. Stage the files you want to commit:
-    ```bash
-    git add <file>
-    ```
-
-7. Commit your changes with a meaningful message (the pre-commit hook will run automatically):
-    ```bash
-    git commit -m "Your commit message"
-    ```
-
-8. (Only for the first time) Set the upstream branch if it does not exist remotely:
-    ```bash
-    git --set-upstream origin <branch>
-    ```
-
-9. Push your changes to the remote repository:
-    ```bash
-    git push origin <branch>
-    ```
 
 ## License
 
 MIT
+
+**Coverage**
+[![codecov](https://codecov.io/gh/jessebrite/products-api/graph/badge.svg)](https://codecov.io/gh/jessebrite/products-api)
