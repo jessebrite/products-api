@@ -7,9 +7,9 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy import create_engine
 
 from config.settings import settings
-from core.middleware import add_middlewares
+from core.middleware import LoggingMiddleware, add_middlewares
 from exceptions.exceptions import AuthException, app_exception_handler
-from logger import LoggingMiddleware, setup_logger
+from logger import setup_logger
 from models import Base
 from routers import auth, items, users
 from utils import health_check, liveness
@@ -28,6 +28,9 @@ app: FastAPI = FastAPI(
 
 app.add_exception_handler(AuthException, app_exception_handler)
 app.add_middleware(LoggingMiddleware)
+
+
+add_middlewares(app)
 
 
 add_middlewares(app)
