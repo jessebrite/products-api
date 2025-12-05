@@ -7,14 +7,14 @@ PROJECT_NAME = products-api
 PYTHON = python
 DOCKER_COMPOSE = docker-compose -f docker-compose.yml
 
-TARGETS = run clean install unit integration covunit covint cov test lint format migrate docker-up \
+TARGETS = run clean install unit integration covunit covint cov test ruff migrate docker-up \
 	build docker-stop docker-down docker-test coverage
 
 .PHONY: $(TARGETS)
 
 ## Run FastAPI in development mode (with hot-reload)
 run:
-	cd src && uvicorn main:app --reload
+	cd src && uv run uvicorn main:app --reload
 
 ## Clean up coverage and cache files
 clean:
@@ -60,12 +60,8 @@ coverage: covunit covint
 test:
 	uv run pytest --tb=long --maxfail=1 -vv --disable-warnings
 
-## Lint the code using ruff
-lint:
-	uv run ruff check .
-
-## Format the code using ruff
-format:
+## Format and lint the code using ruff
+ruff:
 	uv run ruff format . && uv run ruff check --fix .
 
 ## Run database migrations using alembic
@@ -94,5 +90,5 @@ docker-test:
 
 ## Lint, format, and test all in one go (CI ready)
 ci:
-	make format
+	make ruff
 	make coverage

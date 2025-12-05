@@ -4,10 +4,10 @@ from fastapi import APIRouter, Depends
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from core import get_current_user
 from database import get_db
 from models import User
 from schemas import UserResponse
-from security import get_current_user
 
 router = APIRouter(prefix="/users", tags=["Users"])
 

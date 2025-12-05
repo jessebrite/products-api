@@ -4,9 +4,15 @@ from datetime import timedelta
 
 from fastapi import APIRouter, BackgroundTasks, Depends, status
 from fastapi.security import OAuth2PasswordRequestForm
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from config import settings
+from core import (
+    create_access_token,
+    get_password_hash,
+    verify_password,
+)
 from database import get_db
 from exceptions.exceptions import (
     EmailAlreadyExistsException,
@@ -15,11 +21,6 @@ from exceptions.exceptions import (
 )
 from models import User
 from schemas import Token, UserCreate, UserResponse
-from security import (
-    create_access_token,
-    get_password_hash,
-    verify_password,
-)
 from tasks import log_user_action, send_welcome_email
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
@@ -44,11 +45,13 @@ async def register(
     - Send welcome email
     - Log user registration
     """
-    db_user = db.query(User).filter(User.username == user.username).first()
+    stmt = select(User).where(User.username == user.username)
+    db_user = db.scalars(stmt).first()
     if db_user:
         raise UsernameAlreadyExistsException(detail="Username already exists")
 
-    db_user = db.query(User).filter(User.email == user.email).first()
+    stmt = select(User).where(User.email == user.email)
+    db_user = db.scalars(stmt).first()
     if db_user:
         raise EmailAlreadyExistsException(detail="Email already exists")
 
@@ -84,7 +87,8 @@ async def login(
     Background tasks:
     - Log user login
     """
-    user = db.query(User).filter(User.username == form_data.username).first()
+    stmt = select(User).where(User.username == form_data.username)
+    user = db.scalars(stmt).first()
 
     if not user or not verify_password(form_data.password, user.hashed_password):
         raise UnauthorizedException(

@@ -29,7 +29,8 @@ dependencies = [
     "python-multipart==0.0.6",
     "passlib[bcrypt]==1.7.4",
     "bcrypt>=4.0.0,<5.0.0",
-    "python-json-logger"
+    "python-json-logger",
+    "slowapi==0.1.9"
 ]
 
 [build-system]
@@ -38,6 +39,7 @@ build-backend = "hatchling.build"
 
 [tool.hatch.version]
 path = "version.txt"
+pattern = '^(?P<version>[^\s#]+)'
 
 [tool.hatch.build.targets.wheel]
 packages = ["src"]
