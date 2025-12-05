@@ -2,12 +2,17 @@
 
 from datetime import timedelta
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, Depends, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
 from config import settings
 from database import get_db
+from exceptions.exceptions import (
+    EmailAlreadyExistsException,
+    UnauthorizedException,
+    UsernameAlreadyExistsException,
+)
 from models import User
 from schemas import Token, UserCreate, UserResponse
 from security import (
@@ -41,15 +46,11 @@ async def register(
     """
     db_user = db.query(User).filter(User.username == user.username).first()
     if db_user:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Username already exists"
-        )
+        raise UsernameAlreadyExistsException(detail="Username already exists")
 
     db_user = db.query(User).filter(User.email == user.email).first()
     if db_user:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Email already exists"
-        )
+        raise EmailAlreadyExistsException(detail="Email already exists")
 
     hashed_password = get_password_hash(user.password)
     db_user = User(
@@ -86,8 +87,7 @@ async def login(
     user = db.query(User).filter(User.username == form_data.username).first()
 
     if not user or not verify_password(form_data.password, user.hashed_password):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
+        raise UnauthorizedException(
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )

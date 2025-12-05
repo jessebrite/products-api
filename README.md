@@ -1,17 +1,6 @@
-# Python Project
+# Products API
 
-A simple Python project starter template.
-
-## Project Structure
-
-```
-.
-├── src/                 # Source code
-├── tests/               # Unit tests
-├── requirements.txt     # Project dependencies
-├── .gitignore          # Git ignore rules
-└── README.md           # Project documentation
-```
+A secure CRUD API built with FastAPI and JWT authentication for managing items. This application allows users to register, authenticate, and perform CRUD operations on items with background task processing for notifications and logging.
 
 ## Getting Started
 
@@ -37,6 +26,9 @@ git checkout products-api
 
 # Create the venv and install dependencies + dev tools (including pre-commit)
 uv sync --all-extras --dev && uv run pre-commit install
+
+# For subsequent runs
+uv run pre-commit run --all-files
 ```
 
 ### Running the Project
@@ -51,7 +43,7 @@ cd src && uv run uvicorn main:app --reload
 ```bash
 uv run pytest tests/
 
-# There's a make command that helps you format, run all tests and generate test coverage in one go. Make sure you have make installed on your system and run the followinf:
+# There's a make command that helps you format, run all tests and generate test coverage in one go. Make sure you have make installed on your system and run the following:
 make ci
 ```
 

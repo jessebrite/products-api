@@ -5,9 +5,13 @@ from unittest.mock import MagicMock, Mock, patch
 import pytest
 from jose import JWTError
 
+from exceptions.exceptions import (
+    InactiveUserException,
+    NotFoundException,
+    ValidationException,
+)
 from src.models import User
 from src.security.security import (
-    AuthException,
     create_access_token,
     get_current_user,
     get_password_hash,
@@ -117,7 +121,7 @@ class TestGetCurrentUser:
     @pytest.mark.asyncio
     async def test_missing_token_raises_exception(self, get_db_fixture) -> None:
         """Test that missing token raises AuthException."""
-        with pytest.raises(AuthException) as exc_info:
+        with pytest.raises(NotFoundException) as exc_info:
             await get_current_user(token=None, db=get_db_fixture)
 
         assert exc_info.value.detail == "Missing token"
@@ -147,7 +151,7 @@ class TestGetCurrentUser:
         mock_scalars.first.return_value = mock_user
 
         with patch.object(get_db_fixture, "scalars", return_value=mock_scalars):
-            with pytest.raises(AuthException) as exc_info:
+            with pytest.raises(InactiveUserException) as exc_info:
                 await get_current_user(token="valid_token", db=get_db_fixture)
 
         assert str(exc_info.value.detail) == "Inactive user"
@@ -167,7 +171,7 @@ class TestGetCurrentUser:
         mock_jwt_decode.side_effect = JWTError("Invalid token")
 
         # Call the function and expect exception
-        with pytest.raises(AuthException) as exc_info:
+        with pytest.raises(ValidationException) as exc_info:
             await get_current_user(token="invalid_token", db=get_db_fixture)
 
         assert exc_info.value.detail == "Invalid or expired token"
@@ -180,10 +184,10 @@ class TestGetCurrentUser:
         """Test token missing 'sub' claim raises AuthException."""
         mock_jwt_decode.return_value = {"some_other_key": "value", "exp": 1234567890}
 
-        with pytest.raises(AuthException) as exc_info:
+        with pytest.raises(NotFoundException) as exc_info:
             await get_current_user(token="token_without_sub", db=get_db_fixture)
 
-        assert exc_info.value.status_code == 401
+        assert exc_info.value.status_code == 404
         assert exc_info.value.detail == "Invalid token: missing 'sub' claim"
 
     @patch("jose.jwt.decode")
@@ -201,7 +205,7 @@ class TestGetCurrentUser:
 
         with patch.object(get_db_fixture, "scalars", return_value=mock_scalars):
             # Call the function and expect exception
-            with pytest.raises(AuthException) as exc_info:
+            with pytest.raises(NotFoundException) as exc_info:
                 await get_current_user(token="token_for_nonexistent", db=get_db_fixture)
 
         assert exc_info.value.detail == "User not found"
@@ -223,7 +227,7 @@ class TestGetCurrentUser:
         mock_scalars.first.return_value = mock_user
 
         with patch.object(get_db_fixture, "scalars", return_value=mock_scalars):
-            with pytest.raises(AuthException) as exc_info:
+            with pytest.raises(InactiveUserException) as exc_info:
                 await get_current_user(token="token_for_inactive", db=get_db_fixture)
 
         assert exc_info.value.detail == "Inactive user"
@@ -235,7 +239,7 @@ class TestGetCurrentUser:
         mock_jwt_decode.side_effect = JWTError("Token has expired")
 
         # Call the function and expect exception
-        with pytest.raises(AuthException) as exc_info:
+        with pytest.raises(ValidationException) as exc_info:
             await get_current_user(token="expired_token", db=get_db_fixture)
 
         assert exc_info.value.detail == "Invalid or expired token"
@@ -249,7 +253,7 @@ class TestGetCurrentUser:
         mock_jwt_decode.side_effect = JWTError("Invalid signature")
 
         # Call the function and expect exception
-        with pytest.raises(AuthException) as exc_info:
+        with pytest.raises(ValidationException) as exc_info:
             await get_current_user(token="invalid_signature_token", db=get_db_fixture)
 
         assert exc_info.value.detail == "Invalid or expired token"

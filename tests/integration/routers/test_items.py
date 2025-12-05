@@ -41,9 +41,9 @@ class TestItemCRUD:
     @pytest.mark.parametrize(
         "title, description, status_code",
         [
-            ("Sample Item 1", "Description for item 1", 401),
-            ("Sample Item 2", "Description for item 2", 401),
-            ("Sample Item 3", "", 401),
+            ("Sample Item 1", "Description for item 1", 404),
+            ("Sample Item 2", "Description for item 2", 404),
+            ("Sample Item 3", "", 404),
         ],
     )
     def test_create_item_without_auth(

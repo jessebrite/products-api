@@ -6,7 +6,15 @@ from typing import Optional
 from pydantic import BaseModel, ConfigDict, EmailStr
 
 
-class UserBase(BaseModel):
+class StrictModel(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+        strict=True,
+        validate_assignment=True,
+    )
+
+
+class UserBase(StrictModel):
     """Base user schema."""
 
     username: str
@@ -29,7 +37,7 @@ class UserResponse(UserBase):
     created_at: datetime
 
 
-class ItemBase(BaseModel):
+class ItemBase(StrictModel):
     """Base item schema."""
 
     title: str
@@ -42,7 +50,7 @@ class ItemCreate(ItemBase):
     pass
 
 
-class ItemUpdate(BaseModel):
+class ItemUpdate(StrictModel):
     """Schema for updating an item."""
 
     title: Optional[str] = None
@@ -62,14 +70,14 @@ class ItemResponse(ItemBase):
     updated_at: datetime
 
 
-class Token(BaseModel):
+class Token(StrictModel):
     """Schema for authentication token response."""
 
     access_token: str
     token_type: str
 
 
-class TokenData(BaseModel):
+class TokenData(StrictModel):
     """Schema for token data."""
 
     username: Optional[str] = None
