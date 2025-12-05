@@ -3,25 +3,10 @@
 Background tasks run after the response is sent to the client, allowing
 long-running operations without blocking the user's request.
 
-Example:
-    from fastapi import BackgroundTasks
-    from tasks import send_welcome_email
-
-    @app.post("/register")
-    def register(user: UserCreate, background_tasks: BackgroundTasks):
-        # Create user
-        new_user = User(...)
-        db.add(new_user)
-        db.commit()
-
-        # Add background task - runs after response is sent
-        background_tasks.add_task(send_welcome_email, user.email, user.username)
-
-        return new_user
 """
 
 import logging
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Optional
 
 # Configure logging for tasks
@@ -41,7 +26,7 @@ def send_welcome_email(email: str, username: str) -> None:
         # For now, just log the operation
         log_message = (
             f"📧 [TASK] Welcome email sent to {email} (user: {username}) "
-            f"at {datetime.utcnow().isoformat()}"
+            f"at {datetime.now(UTC).isoformat()}"
         )
         logger.info(log_message)
 
@@ -65,7 +50,7 @@ def log_user_action(username: str, action: str, details: Optional[str] = None) -
         details: Additional details about the action
     """
     try:
-        timestamp = datetime.utcnow().isoformat()
+        timestamp = datetime.now(UTC).isoformat()
         details_str = f" - {details}" if details else ""
         log_message = (
             f"📝 [AUDIT] User '{username}' performed action '{action}'{details_str} "
@@ -111,7 +96,7 @@ def send_item_notification(
         log_msg = (
             f"🔔 [TASK] Notification sent to {recipient_email} "
             f"({recipient_username}): {message} "
-            f"at {datetime.utcnow().isoformat()}"
+            f"at {datetime.now(UTC).isoformat()}"
         )
         logger.info(log_msg)
 
@@ -139,13 +124,6 @@ def process_item_completion(item_id: int, username: str, item_title: str) -> Non
             f" '{username}' at {datetime.utcnow().isoformat()}"
         )
         logger.info(log_message)
-
-        # TODO: Add logic for item completion
-        # - Update item completion statistics
-        # - Award user achievement/badge
-        # - Send congratulation email
-        # - Update user streak
-        # - Trigger related notifications
 
     except Exception as e:
         logger.error(f"Failed to process item completion for item {item_id}: {e}")

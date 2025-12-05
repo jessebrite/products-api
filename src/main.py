@@ -7,13 +7,16 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy import create_engine
 
 from config.settings import settings
+from exceptions.exceptions import AuthException, app_exception_handler
+from logger import LoggingMiddleware, setup_logger
 from models import Base
 from routers import auth, items, users
 from utils import health_check
 
-# Create database engine and tables
 engine = create_engine(settings.database_url, connect_args={"check_same_thread": False})
 Base.metadata.create_all(bind=engine)
+
+setup_logger()
 
 # Initialize FastAPI app
 app: FastAPI = FastAPI(
@@ -22,6 +25,9 @@ app: FastAPI = FastAPI(
     version=settings.app_version,
     debug=settings.debug,
 )
+
+app.add_exception_handler(AuthException, app_exception_handler)
+app.add_middleware(LoggingMiddleware)
 
 
 # Root path redirect to docs

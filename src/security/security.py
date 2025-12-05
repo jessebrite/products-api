@@ -12,7 +12,11 @@ from sqlalchemy.orm import Session
 
 from config import settings
 from database import get_db
-from exceptions import AuthException
+from exceptions.exceptions import (
+    InactiveUserException,
+    NotFoundException,
+    ValidationException,
+)
 from models import User
 
 # Password hashing context
@@ -54,7 +58,7 @@ async def get_current_user(
 ) -> User:
     """Validate JWT token and return the user."""
     if not token:
-        raise AuthException("Missing token")
+        raise NotFoundException(detail="Missing token")
 
     try:
         payload = jwt.decode(
@@ -65,15 +69,15 @@ async def get_current_user(
         )
         username: str = payload.get("sub")
         if username is None:
-            raise AuthException("Invalid token: missing 'sub' claim")
+            raise NotFoundException(detail="Invalid token: missing 'sub' claim")
     except JWTError:
-        raise AuthException("Invalid or expired token")
+        raise ValidationException(detail="Invalid or expired token")
 
     stmt = select(User).where(User.username == username)
     user = db.scalars(stmt).first()
     if not user:
-        raise AuthException("User not found")
+        raise NotFoundException(detail="User not found")
 
     if not user.is_active:
-        raise AuthException("Inactive user")
+        raise InactiveUserException(detail="Inactive user")
     return user

@@ -1,10 +1,11 @@
 """Item CRUD routes."""
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, Depends, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from database import get_db
+from exceptions.exceptions import NotFoundException
 from models import Item, User
 from schemas import ItemCreate, ItemResponse, ItemUpdate
 from security import get_current_user
@@ -19,9 +20,8 @@ async def get_item_for_user(
     """Get an item by ID for the current user, or raise 404."""
     stmt = select(Item).where(Item.id == item_id, Item.owner_id == user.id)
     item = db.scalars(stmt).first()
-    # item = db.query(Item).filter(Item.id == item_id, Item.owner_id == user.id).first()
     if not item:
-        raise HTTPException(status_code=404, detail="Item not found")
+        raise NotFoundException(detail="Item not found")
     return item
 
 

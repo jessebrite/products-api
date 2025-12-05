@@ -72,7 +72,7 @@ class TestAuthenticationFlow:
                 "password": "password123",
             },
         )
-        assert response.status_code == 400
+        assert response.status_code == 409
         assert "Username already exists" in response.json()["detail"]
 
     def test_register_duplicate_email(self, client: TestClient):
@@ -96,7 +96,7 @@ class TestAuthenticationFlow:
                 "password": "password123",
             },
         )
-        assert response.status_code == 400
+        assert response.status_code == 409
         assert "Email already exists" in response.json()["detail"]
 
     def test_login_success(self, client: TestClient):
