@@ -4,9 +4,8 @@ from contextvars import ContextVar
 from unittest.mock import Mock
 from uuid import uuid4
 
-from fastapi import Request, Response
+from fastapi import Request
 from pythonjsonlogger import jsonlogger
-from starlette.middleware.base import BaseHTTPMiddleware
 
 logger = logging.getLogger("api")
 _request_id: ContextVar[str] = ContextVar("request_id", default=None)
@@ -68,14 +67,6 @@ def _get_log_context(
         "detail": detail,
         "response_body": response_body,
     }
-
-
-class LoggingMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next):
-        response: Response = await call_next(request)
-        if response.status_code < 400:
-            log_success(request, response.status_code)
-        return response
 
 
 def log_exception(request: Request, exc, response_body: dict | None = None):

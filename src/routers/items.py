@@ -1,14 +1,15 @@
 """Item CRUD routes."""
 
-from fastapi import APIRouter, BackgroundTasks, Depends, status
+from fastapi import APIRouter, BackgroundTasks, Depends, Request, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from core import get_current_user
+from core.middleware import limiter
 from database import get_db
 from exceptions.exceptions import NotFoundException
 from models import Item, User
 from schemas import ItemCreate, ItemResponse, ItemUpdate
-from security import get_current_user
 from tasks import log_user_action, process_item_completion, send_item_notification
 
 router = APIRouter(prefix="/items", tags=["Items"])
@@ -26,14 +27,16 @@ async def get_item_for_user(
 
 
 @router.post("", response_model=ItemResponse, status_code=status.HTTP_201_CREATED)
+@limiter.limit("50/minute")
 async def create_item(
+    request: Request,
     item: ItemCreate,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
     background_tasks: BackgroundTasks = BackgroundTasks(),
 ) -> Item:
     """
-    Create a new item.
+    Create a new item
 
     - **title**: Item title
     - **description**: Optional item description
@@ -59,8 +62,11 @@ async def create_item(
 
 
 @router.get("", response_model=list[ItemResponse])
+@limiter.limit("50/minute")
 async def get_items(
-    user: User = Depends(get_current_user), db: Session = Depends(get_db)
+    request: Request,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
 ) -> list[Item]:
     """Get all items for the current user."""
     stmt = select(Item).where(Item.owner_id == user.id)
@@ -68,13 +74,16 @@ async def get_items(
 
 
 @router.get("/{item_id}", response_model=ItemResponse)
-async def get_item(item: Item = Depends(get_item_for_user)) -> Item:
-    """Get a specific item by ID."""
+@limiter.limit("50/minute")
+async def get_item(request: Request, item: Item = Depends(get_item_for_user)) -> Item:
+    """Get a specific item by ID"""
     return item
 
 
 @router.put("/{item_id}", response_model=ItemResponse)
+@limiter.limit("50/minute")
 async def update_item(
+    request: Request,
     item_update: ItemUpdate,
     item: Item = Depends(get_item_for_user),
     user: User = Depends(get_current_user),
@@ -82,12 +91,12 @@ async def update_item(
     background_tasks: BackgroundTasks = BackgroundTasks(),
 ) -> Item:
     """
-    Update an item.
+    Update an item
 
     - **item_id**: Item ID to update
-    - **title**: Optional new title
-    - **description**: Optional new description
-    - **is_completed**: Optional completion status
+    - **title**: new title (optional)
+    - **description**: new description (optional)
+    - **is_completed**: completion status (optional)
 
     Background tasks:
     - Send notification if item completed
@@ -124,14 +133,18 @@ async def update_item(
 
 
 @router.delete("/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
+@limiter.limit("50/minute")
 async def delete_item(
+    request: Request,
     item: Item = Depends(get_item_for_user),
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
     background_tasks: BackgroundTasks = BackgroundTasks(),
 ) -> None:
     """
-    Delete an item by ID.
+    Delete an item by ID
+
+    - **item_id**: Item ID to delete
 
     Background tasks:
     - Send notification

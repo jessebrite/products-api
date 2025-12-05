@@ -28,7 +28,7 @@ def read_pyproject_metadata() -> tuple[str, str, str]:
     """
     default_name = "CRUD API"
     default_description = "A secure CRUD API with JWT authentication"
-    default_version = "0.1.1"
+    default_version = "0.1.0"
 
     app_name = default_name
     app_description = default_description
@@ -39,14 +39,12 @@ def read_pyproject_metadata() -> tuple[str, str, str]:
     version_path = os.path.join(base_path, "version.txt")
 
     try:
-        # Load pyproject.toml
         with open(pyproject_path, "rb") as f:
             pyproject_data = tomli.load(f)
             project_data = pyproject_data.get("project", {})
             app_name = project_data.get("name") or default_name
             app_description = project_data.get("description") or default_description
 
-        # Load version.txt if exists
         if os.path.exists(version_path):
             with open(version_path, "r", encoding="utf-8") as vf:
                 version_content = vf.read().strip()
@@ -56,6 +54,10 @@ def read_pyproject_metadata() -> tuple[str, str, str]:
             f"Loaded app_name='{app_name}', app_description='{app_description}'"
             f" , app_version='{app_version}'"
         )
+
+    except FileNotFoundError as error:
+        logger.error(f"File doesn't exist: {error} ")
+        logger.error("Using default metadata values.")
 
     except Exception as error:
         logger.error(f"Error reading project metadata: {error} ")
@@ -76,38 +78,30 @@ class Settings(BaseSettings):
         case_sensitive=False,
     )
 
-    # API Info (non-sensitive) - loaded dynamically from pyproject.toml and version.txt
     app_name: str
     app_version: str
     app_description: str
 
-    # Security (loaded from vault/environment)
-    secret_key: str = ""  # Loaded via vault
+    secret_key: str = ""
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 30
-
-    # Database (loaded from vault/environment)
-    database_url: str = ""  # Loaded via vault
+    database_url: str = ""
 
     # API
     debug: bool = False
     api_prefix: str = "/api/v1"
 
     def __init__(self, **data) -> None:
-        # Read project metadata
         app_name, app_description, app_version = read_pyproject_metadata()
-        # Set metadata if not explicitly provided
         data.setdefault("app_name", app_name)
         data.setdefault("app_description", app_description)
         data.setdefault("app_version", app_version)
 
         super().__init__(**data)
 
-        # Load secrets from vault
         self.secret_key = vault.get_secret("SECRET_KEY", default=self.secret_key)
         self.database_url = vault.get_secret("DATABASE_URL", default=self.database_url)
 
-        # Optionally override from environment if set
         if self.algorithm:
             self.algorithm = vault.get_optional_secret("ALGORITHM") or self.algorithm
 
@@ -115,10 +109,8 @@ class Settings(BaseSettings):
             self.access_token_expire_minutes = int(minutes_str)
 
 
-# Global settings instance
 settings = Settings()
 
-# Validate all required secrets are available
 try:
     vault.validate_secrets()
 except ValueError as e:

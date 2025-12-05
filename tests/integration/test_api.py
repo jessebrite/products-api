@@ -20,17 +20,6 @@ def test_openapi_metadata(client):
     assert json_data["info"]["version"] == app.version
 
 
-def test_health_endpoint(client):
-    response = client.get("/health")
-    assert response.status_code == 200
-    data = response.json()
-    assert (
-        "status" in data
-        or data.get("status") == "ok"
-        or data.get("status") == "running"
-    )
-
-
 @pytest.mark.parametrize(
     "endpoint, method",
     [

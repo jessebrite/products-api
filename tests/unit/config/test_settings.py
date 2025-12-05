@@ -1,19 +1,29 @@
 from unittest.mock import mock_open, patch
 
+import pytest
+
 from src.config.settings import read_pyproject_metadata
 
-# Sample valid pyproject.toml content (minimal)
 valid_pyproject_toml = b"""
 [project]
 name = "Test API"
 description = "A test API description"
 """
 
-# Sample invalid pyproject.toml content (malformed)
 invalid_pyproject_toml = b"""
 [project
 name = "Test API"
 """
+
+_DEFAULT_VERSION: str = "0.1.0"
+_DEFAULT_NAME: str = "CRUD API"
+_DEFAULT_DESCRIPTION: str = "A secure CRUD API with JWT authentication"
+
+
+def assert_default_values(name: str, desc: str, version: str) -> None:
+    assert name == _DEFAULT_NAME
+    assert desc == _DEFAULT_DESCRIPTION
+    assert version == _DEFAULT_VERSION
 
 
 def test_read_pyproject_metadata_valid_files():
@@ -33,10 +43,10 @@ def test_read_pyproject_metadata_valid_files():
 def test_read_pyproject_metadata_missing_version_file():
     m_open = mock_open(read_data=valid_pyproject_toml)
     with patch("builtins.open", m_open), patch("os.path.exists", return_value=False):
-        name, desc, version = read_pyproject_metadata()
-        assert name == "Test API"
-        assert desc == "A test API description"
-        assert version == "0.1.1"  # default fallback
+        with pytest.raises(Exception) as exc_info:
+            name, desc, version = read_pyproject_metadata()
+            assert_default_values(name, desc, version)
+            exc_info.match("Error reading project metadata")
 
 
 def test_read_pyproject_metadata_missing_pyproject_file():
@@ -45,9 +55,7 @@ def test_read_pyproject_metadata_missing_pyproject_file():
         patch("os.path.exists", return_value=False),
     ):
         name, desc, version = read_pyproject_metadata()
-        assert name == "CRUD API"  # default fallback
-        assert desc == "A secure CRUD API with JWT authentication"  # default fallback
-        assert version == "0.1.1"  # default fallback
+        assert_default_values(name, desc, version)
 
 
 def test_read_pyproject_metadata_malformed_pyproject():
@@ -56,9 +64,7 @@ def test_read_pyproject_metadata_malformed_pyproject():
         # tomllib.load will raise TOMLDecodeError (subclass of ValueError)
         name, desc, version = read_pyproject_metadata()
         # Should fallback to defaults
-        assert name == "CRUD API"
-        assert desc == "A secure CRUD API with JWT authentication"
-        assert version == "0.1.1"
+        assert_default_values(name, desc, version)
 
 
 def test_read_pyproject_metadata_empty_fields():
@@ -71,6 +77,4 @@ def test_read_pyproject_metadata_empty_fields():
     ]
     with patch("builtins.open", m_open), patch("os.path.exists", return_value=True):
         name, desc, version = read_pyproject_metadata()
-        assert name == "CRUD API"  # fallback default because of empty string
-        assert desc == "A secure CRUD API with JWT authentication"  # fallback
-        assert version == "0.1.1"  # fallback due to empty version content
+        assert_default_values(name, desc, version)

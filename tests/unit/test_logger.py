@@ -1,10 +1,7 @@
 import logging
-from unittest.mock import ANY, AsyncMock, Mock, patch
-
-import pytest
+from unittest.mock import ANY, Mock, patch
 
 from src.logger import (
-    LoggingMiddleware,
     _get_log_context,
     log_exception,
     log_success,
@@ -91,38 +88,6 @@ class TestGetLogContext:
         )
         assert context["detail"] == "Bad input"
         assert context["response_body"] == {"error": "invalid"}
-
-
-class TestLoggingMiddleware:
-    @pytest.mark.asyncio
-    async def test_dispatch_successful_response(self):
-        """Test middleware logs successful responses."""
-        middleware = LoggingMiddleware(Mock())
-        request = Mock()
-        response = Mock()
-        response.status_code = 200
-
-        call_next = AsyncMock(return_value=response)
-
-        with patch("src.logger.log_success") as mock_log_success:
-            result = await middleware.dispatch(request, call_next)
-            mock_log_success.assert_called_once_with(request, 200)
-            assert result == response
-
-    @pytest.mark.asyncio
-    async def test_dispatch_error_response_no_log(self):
-        """Test middleware does not log error responses."""
-        middleware = LoggingMiddleware(Mock())
-        request = Mock()
-        response = Mock()
-        response.status_code = 404
-
-        call_next = AsyncMock(return_value=response)
-
-        with patch("src.logger.log_success") as mock_log_success:
-            result = await middleware.dispatch(request, call_next)
-            mock_log_success.assert_not_called()
-            assert result == response
 
 
 class TestLogException:

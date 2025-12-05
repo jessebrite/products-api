@@ -10,13 +10,13 @@ from exceptions.exceptions import (
     NotFoundException,
     ValidationException,
 )
-from src.models import User
-from src.security.security import (
+from src.core.security import (
     create_access_token,
     get_current_user,
     get_password_hash,
     verify_password,
 )
+from src.models import User
 
 
 class TestPasswordHashing:
@@ -88,14 +88,14 @@ class TestTokenGeneration:
 class TestGetCurrentUser:
     """Test get_current_user function."""
 
-    @patch("src.security.security.settings")
+    @patch("src.core.security.settings")
     @patch("jose.jwt.decode")
     @pytest.mark.asyncio
     async def test_valid_token_active_user(
         self, mock_jwt_decode: Mock, mock_settings: Mock, get_db_fixture
     ) -> None:
         """Test valid token with active user returns the user."""
-        mock_settings.secret_key = "test_secret"
+        mock_settings.secret_key = "test_secret"  # pragma: detect-secrets: ignore
         mock_settings.algorithm = "HS256"
 
         mock_jwt_decode.return_value = {"sub": "testuser", "exp": 1234567890}
@@ -126,15 +126,15 @@ class TestGetCurrentUser:
 
         assert exc_info.value.detail == "Missing token"
 
-    @patch("src.security.security.settings")
-    @patch("src.security.security.jwt.decode")
+    @patch("src.core.security.settings")
+    @patch("src.core.security.jwt.decode")
     @pytest.mark.asyncio
     async def test_valid_token_inactive_user(
         self, mock_jwt_decode: Mock, mock_settings: Mock, get_db_fixture
     ) -> None:
         """Test valid token with inactive user raises AuthException."""
         # Mock settings
-        mock_settings.secret_key = "test_secret"
+        mock_settings.secret_key = "test_secret"  # pragma: detect-secrets: ignore
         mock_settings.algorithm = "HS256"
 
         # Mock JWT decode to return valid payload
@@ -210,14 +210,14 @@ class TestGetCurrentUser:
 
         assert exc_info.value.detail == "User not found"
 
-    @patch("src.security.security.settings")
+    @patch("src.core.security.settings")
     @patch("jose.jwt.decode")
     @pytest.mark.asyncio
     async def test_token_inactive_user(
         self, mock_jwt_decode: Mock, mock_settings: Mock, get_db_fixture
     ) -> None:
         """Test token for inactive user raises AuthException."""
-        mock_settings.secret_key = "test_secret"
+        mock_settings.secret_key = "test_secret"  # pragma: detect-secrets: ignore
         mock_settings.algorithm = "HS256"
         mock_jwt_decode.return_value = {"sub": "testuser", "exp": 1234567890}
 
