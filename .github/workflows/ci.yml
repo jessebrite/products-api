@@ -31,7 +31,7 @@ jobs:
         run: |
           echo "Running linting and auditing checks"
           pip-audit --desc --fix
-          ruff check . --output-format=github
+          ruff format . & ruff check --fix . --output-format=github
           semgrep ci --config p/python --config p/fastapi
 
   unit-test:

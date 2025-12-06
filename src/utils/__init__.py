@@ -1,14 +1,13 @@
 """Utility functions."""
 
 import logging
-from logging import Logger
 
 from fastapi.responses import JSONResponse
 from sqlalchemy.sql import text
 
 from database import SessionLocal
 
-logger: Logger = logging.getLogger(__name__)
+logger: logging.Logger = logging.getLogger(__name__)
 logger.setLevel(level=logging.INFO)
 
 
