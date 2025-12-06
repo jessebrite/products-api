@@ -114,7 +114,6 @@ def add_middlewares(app: FastAPI) -> None:
         # allow_origins=["http://localhost:8000",
         # "http:/http://127.0.0.1:8000"
         # ], # to be populated
-        allow_origins=["*"],
         allow_credentials=True,
         allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         allow_headers=["*"],
