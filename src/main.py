@@ -8,7 +8,6 @@ from sqlalchemy import create_engine
 
 from config.settings import settings
 from core.middleware import add_middlewares
-from exceptions.exceptions import AuthException, app_exception_handler
 from logger import setup_logger
 from models import Base
 from routers import auth, items, users
@@ -25,8 +24,6 @@ app: FastAPI = FastAPI(
     version=settings.app_version,
     debug=settings.debug,
 )
-
-app.add_exception_handler(AuthException, app_exception_handler)
 
 add_middlewares(app)
 

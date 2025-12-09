@@ -1,16 +1,16 @@
 """Core package."""
 
-from .security import (
+from core.security import (
     create_access_token,
     get_current_user,
-    get_password_hash,
+    hash_password,
     oauth2_scheme,
     verify_password,
 )
 
 __all__ = [
     "verify_password",
-    "get_password_hash",
+    "hash_password",
     "create_access_token",
     "get_current_user",
     "oauth2_scheme",

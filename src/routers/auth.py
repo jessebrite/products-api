@@ -5,12 +5,13 @@ from datetime import timedelta
 from fastapi import APIRouter, BackgroundTasks, Depends, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from config import settings
 from core import (
     create_access_token,
-    get_password_hash,
+    hash_password,
     verify_password,
 )
 from database import get_db
@@ -45,22 +46,23 @@ async def register(
     - Send welcome email
     - Log user registration
     """
-    stmt = select(User).where(User.username == user.username)
-    db_user = db.scalars(stmt).first()
-    if db_user:
-        raise UsernameAlreadyExistsException(detail="Username already exists")
 
-    stmt = select(User).where(User.email == user.email)
-    db_user = db.scalars(stmt).first()
-    if db_user:
+    db_user = User(
+        username=user.username,
+        email=user.email,
+        hashed_password=hash_password(user.password),
+    )
+
+    db.add(db_user)
+
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        if db.scalar(select(User).where(User.username == user.username)):
+            raise UsernameAlreadyExistsException(detail="Username already exists")
         raise EmailAlreadyExistsException(detail="Email already exists")
 
-    hashed_password = get_password_hash(user.password)
-    db_user = User(
-        username=user.username, email=user.email, hashed_password=hashed_password
-    )
-    db.add(db_user)
-    db.commit()
     db.refresh(db_user)
 
     # Add background tasks (run after response is sent)

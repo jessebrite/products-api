@@ -5,13 +5,10 @@ long-running operations without blocking the user's request.
 
 """
 
-import logging
 from datetime import UTC, datetime
 from typing import Optional
 
-# Configure logging for tasks
-logger = logging.getLogger("tasks")
-logger.setLevel(logging.INFO)
+from logger import logger
 
 
 def send_welcome_email(email: str, username: str) -> None:

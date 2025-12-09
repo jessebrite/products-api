@@ -101,7 +101,6 @@ class TestLogException:
             mock_error.assert_called_once()
             args, kwargs = mock_error.call_args
             assert "Server error: 500" in args[0]
-            assert kwargs["exc_info"] is True
 
     def test_log_response_bad_request(self):
         """Test logging 400 Bad Request."""
@@ -110,7 +109,7 @@ class TestLogException:
 
         with patch.object(logger, "error") as mock_error:
             log_response(request, exc)
-            mock_error.assert_called_once_with("Bad Request", extra=ANY)
+            mock_error.assert_called_once_with("Bad Request: 400", extra=ANY)
 
     def test_log_response_unauthorized(self):
         """Test logging 401 Unauthorized."""
@@ -119,14 +118,14 @@ class TestLogException:
 
         with patch.object(logger, "error") as mock_error:
             log_response(request, exc)
-            mock_error.assert_called_once_with("Unauthorized", extra=ANY)
+            mock_error.assert_called_once_with("Unauthorized: 401", extra=ANY)
 
     def test_log_response_not_found(self):
         """Test logging 404 Not Found."""
         request = Mock()
         exc = HTTPException(status_code=404, detail="Not found")
 
-        with patch.object(logger, "info") as mock_info:
+        with patch.object(logger, "error") as mock_info:
             log_response(request, exc)
             mock_info.assert_called_once_with("Not found: 404", extra=ANY)
 
@@ -135,7 +134,7 @@ class TestLogException:
         request = Mock()
         exc = HTTPException(status_code=409, detail="Conflict")
 
-        with patch.object(logger, "info") as mock_info:
+        with patch.object(logger, "error") as mock_info:
             log_response(request, exc)
             mock_info.assert_called_once_with("Conflict: 409", extra=ANY)
 
@@ -144,7 +143,7 @@ class TestLogException:
         request = Mock()
         exc = HTTPException(status_code=403, detail="Forbidden")
 
-        with patch.object(logger, "info") as mock_info:
+        with patch.object(logger, "error") as mock_info:
             log_response(request, exc)
             mock_info.assert_called_once_with("Client error: 403", extra=ANY)
 

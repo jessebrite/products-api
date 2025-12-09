@@ -38,6 +38,8 @@ jobs:
     name: Unit Tests (Python 3.11)
     needs: lint
     runs-on: ubuntu-latest
+    env:
+      SECRET_KEY: ${{ secrets.SECRET_KEY }}
 
     steps:
       - uses: actions/checkout@v4
@@ -77,6 +79,8 @@ jobs:
     name: Integration Tests (Python "3.11")
     needs: [lint, unit-test]
     runs-on: ubuntu-latest
+    env:
+      SECRET_KEY: ${{ secrets.SECRET_KEY }}
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
