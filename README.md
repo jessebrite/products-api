@@ -32,10 +32,25 @@ uv run pre-commit run --all-files
 ```
 
 ### Running the Project
+Make sure you have "make" (pun-unintended) installed on your system and you can
+run alternative "make" commands that achieve the same results.
 
+Make comes pre-installed on several Unix-like system but for Windows Powershell, run the following:
+#### 1. Install Scoop (if you don’t have it yet)
+```powershell
+iwr -useb https://get.scoop.sh | iex
+```
+
+#### 2. Install make
+```powershell
+scoop install make
+```
+Now that you have everything configured, you can go ahead and the project
 ```bash
 # change directory into src and run uvicorn from there
 cd src && uv run uvicorn main:app --reload
+# Or
+make run
 ```
 
 ### Running Tests
@@ -43,7 +58,8 @@ cd src && uv run uvicorn main:app --reload
 ```bash
 uv run pytest tests/
 
-# There's a make command that helps you format, run all tests and generate test coverage in one go. Make sure you have make installed on your system and run the following:
+# There's a "make" command that helps you format, lint, run all tests and generate test coverage in one go.
+# Run the following:
 make ci
 ```
 

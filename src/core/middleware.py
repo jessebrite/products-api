@@ -11,7 +11,7 @@ from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoin
 from starlette.types import ASGIApp
 
 from exceptions.exceptions import AuthException, app_exception_handler
-from logger import log_response
+from logger import log_response, logger
 
 
 class RequestSizeLimiter(BaseHTTPMiddleware):
@@ -103,6 +103,7 @@ class LoggingMiddleware(BaseHTTPMiddleware):
             try:
                 response_json = json.loads(body_str)
             except json.JSONDecodeError:
+                logger.warning(f"Failed to decode response body: {body_str}")
                 response_json = None
         except Exception:
             body_str = "<undecodable>"
@@ -135,7 +136,6 @@ def add_middlewares(app: FastAPI) -> None:
     app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
     app.add_exception_handler(AuthException, app_exception_handler)
     app.add_middleware(SlowAPIMiddleware)  # must come AFTER limiter is in state
-
     app.add_middleware(
         CORSMiddleware,
         allow_origins=[

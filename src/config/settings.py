@@ -6,18 +6,16 @@ Secrets are loaded from environment variables (typically from a .env file).
 See src/vault.py for the secret management system.
 """
 
-import logging
 import os
 from pathlib import Path
+from typing import Any
 
 import tomli
-from pydantic import ConfigDict
+from pydantic import ConfigDict, Field, field_validator, model_validator
 from pydantic_settings import BaseSettings
 
+from logger import logger
 from vault import vault
-
-logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.DEBUG)
 
 
 def read_pyproject_metadata() -> tuple[str, str, str]:
@@ -34,9 +32,9 @@ def read_pyproject_metadata() -> tuple[str, str, str]:
     app_description = default_description
     app_version = default_version
 
-    base_path = Path(__file__).parent.parent.parent.resolve()
-    pyproject_path = os.path.join(base_path, "pyproject.toml")
-    version_path = os.path.join(base_path, "version.txt")
+    base_path = Path(__file__).resolve().parent.parent.parent
+    pyproject_path = base_path / "pyproject.toml"
+    version_path = base_path / "version.txt"
 
     try:
         with open(pyproject_path, "rb") as f:
@@ -73,25 +71,41 @@ class Settings(BaseSettings):
     which reads from environment variables.
     """
 
+    debug: bool = False
+
     model_config = ConfigDict(
         env_file=".env",
         case_sensitive=False,
     )
 
-    app_name: str
-    app_version: str
-    app_description: str
+    app_name: str = Field(
+        default="CRUD API", description="Application name from pyproject.toml"
+    )
+    app_version: str = Field(
+        default="0.1.0", description="Application version from version.txt"
+    )
+    app_description: str = Field(
+        default="A secure CRUD API with JWT authentication",
+        description="Application description from pyproject.toml",
+    )
 
-    secret_key: str = ""
-    algorithm: str = "HS256"
+    secret_key: str = Field(min_length=32)
+    algorithm: str = Field(default="HS256", pattern=r"^[A-Za-z0-9]+$")
+    database_url: str = Field(default="")
     access_token_expire_minutes: int = 30
-    database_url: str = ""
+
+    @field_validator("access_token_expire_minutes")
+    @classmethod
+    def validate_expiry(cls, v: int) -> int:
+        if v <= 0:
+            raise ValueError("Token expiry must be positive")
+        return v
 
     # API
     debug: bool = False
     api_prefix: str = "/api/v1"
 
-    def __init__(self, **data) -> None:
+    def __init__(self, **data: Any) -> None:
         app_name, app_description, app_version = read_pyproject_metadata()
         data.setdefault("app_name", app_name)
         data.setdefault("app_description", app_description)
@@ -99,14 +113,16 @@ class Settings(BaseSettings):
 
         super().__init__(**data)
 
+    @model_validator(mode="after")
+    def load_secrets(self) -> "Settings":
         self.secret_key = vault.get_secret("SECRET_KEY", default=self.secret_key)
         self.database_url = vault.get_secret("DATABASE_URL", default=self.database_url)
-
-        if self.algorithm:
-            self.algorithm = vault.get_optional_secret("ALGORITHM") or self.algorithm
+        self.algorithm = vault.get_optional_secret("ALGORITHM") or self.algorithm
 
         if minutes_str := vault.get_optional_secret("ACCESS_TOKEN_EXPIRE_MINUTES"):
             self.access_token_expire_minutes = int(minutes_str)
+
+        return self
 
 
 settings = Settings()
@@ -114,6 +130,4 @@ settings = Settings()
 try:
     vault.validate_secrets()
 except ValueError as e:
-    import warnings
-
-    warnings.warn(f"⚠️  Secret validation warning: {e}", RuntimeWarning)
+    logger.warning(f"⚠️  Secret validation warning: {e}", RuntimeWarning)

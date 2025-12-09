@@ -102,7 +102,7 @@ async def update_item(
     - Send notification if item completed
     - Log action
     """
-    was_completed = item.is_completed
+    was_completed: bool = item.is_completed
 
     update_data = item_update.model_dump(exclude_unset=True)
     for key, value in update_data.items():
