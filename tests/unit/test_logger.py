@@ -1,10 +1,11 @@
 import logging
 from unittest.mock import ANY, Mock, patch
 
+from fastapi import HTTPException
+
 from src.logger import (
     _get_log_context,
-    log_exception,
-    log_success,
+    log_response,
     logger,
     setup_logger,
 )
@@ -68,7 +69,6 @@ class TestGetLogContext:
         request.client.host = "10.0.0.1"
         request.headers = {"user-agent": "api-client"}
         request.state = Mock()
-        # No user attribute
 
         context = _get_log_context(request, 204)
         assert context["user_id"] is None
@@ -91,84 +91,91 @@ class TestGetLogContext:
 
 
 class TestLogException:
-    def test_log_exception_server_error(self):
+    def test_log_response_server_error(self):
         """Test logging server errors (5xx)."""
         request = Mock()
-        exc = Mock()
-        exc.status_code = 500
-        exc.detail = "Internal error"
+        exc = HTTPException(status_code=500, detail="Internal error")
 
         with patch.object(logger, "error") as mock_error:
-            log_exception(request, exc)
+            log_response(request, exc)
             mock_error.assert_called_once()
             args, kwargs = mock_error.call_args
             assert "Server error: 500" in args[0]
             assert kwargs["exc_info"] is True
 
-    def test_log_exception_bad_request(self):
+    def test_log_response_bad_request(self):
         """Test logging 400 Bad Request."""
         request = Mock()
-        exc = Mock()
-        exc.status_code = 400
-        exc.detail = "Bad request"
+        exc = HTTPException(status_code=400, detail="Bad request")
 
         with patch.object(logger, "error") as mock_error:
-            log_exception(request, exc)
+            log_response(request, exc)
             mock_error.assert_called_once_with("Bad Request", extra=ANY)
 
-    def test_log_exception_unauthorized(self):
+    def test_log_response_unauthorized(self):
         """Test logging 401 Unauthorized."""
         request = Mock()
-        exc = Mock()
-        exc.status_code = 401
-        exc.detail = "Unauthorized"
+        exc = HTTPException(status_code=401, detail="Unauthorized")
 
-        with patch.object(logger, "warning") as mock_warning:
-            log_exception(request, exc)
-            mock_warning.assert_called_once_with("Client error: 401", extra=ANY)
+        with patch.object(logger, "error") as mock_error:
+            log_response(request, exc)
+            mock_error.assert_called_once_with("Unauthorized", extra=ANY)
 
-    def test_log_exception_other_client_error(self):
-        """Test logging other 4xx errors."""
+    def test_log_response_not_found(self):
+        """Test logging 404 Not Found."""
         request = Mock()
-        exc = Mock()
-        exc.status_code = 404
-        exc.detail = "Not found"
+        exc = HTTPException(status_code=404, detail="Not found")
 
         with patch.object(logger, "info") as mock_info:
-            log_exception(request, exc)
-            mock_info.assert_called_once_with("Client error: 404", extra=ANY)
+            log_response(request, exc)
+            mock_info.assert_called_once_with("Not found: 404", extra=ANY)
 
-    def test_log_exception_success_status(self):
+    def test_log_response_conflict(self):
+        """Test logging 409 Conflict."""
+        request = Mock()
+        exc = HTTPException(status_code=409, detail="Conflict")
+
+        with patch.object(logger, "info") as mock_info:
+            log_response(request, exc)
+            mock_info.assert_called_once_with("Conflict: 409", extra=ANY)
+
+    def test_log_response_forbidden(self):
+        """Test logging 403 Forbidden (catch-all client error)."""
+        request = Mock()
+        exc = HTTPException(status_code=403, detail="Forbidden")
+
+        with patch.object(logger, "info") as mock_info:
+            log_response(request, exc)
+            mock_info.assert_called_once_with("Client error: 403", extra=ANY)
+
+    def test_log_response_success_status(self):
         """Test logging with success status codes."""
         request = Mock()
-        exc = Mock()
-        exc.status_code = 200
-        exc.detail = "OK"
+        status_code: str = 200
 
         with patch.object(logger, "info") as mock_info:
-            log_exception(request, exc)
-            mock_info.assert_called_once_with("Request succeeded", extra=ANY)
+            log_response(request, status_code=status_code)
+            mock_info.assert_called_once_with("Request succeeded: 200", extra=ANY)
 
 
 class TestLogSuccess:
-    def test_log_success_basic(self):
+    def test_log_response_success_basic(self):
         """Test logging successful response."""
         request = Mock()
         status_code = 200
 
         with patch.object(logger, "info") as mock_info:
-            log_success(request, status_code)
-            mock_info.assert_called_once_with("Request succeeded", extra=ANY)
+            log_response(request, status_code=status_code)
+            mock_info.assert_called_once_with("Request succeeded: 200", extra=ANY)
 
-    def test_log_success_with_body(self):
+    def test_log_response_success_with_body(self):
         """Test logging successful response with body."""
         request = Mock()
         status_code = 201
         response_body = {"id": 1}
 
         with patch.object(logger, "info") as mock_info:
-            log_success(request, status_code, response_body)
-            mock_info.assert_called_once_with("Request succeeded", extra=ANY)
-            # Check that response_body is in the extra dict
+            log_response(request, response_body=response_body, status_code=status_code)
+            mock_info.assert_called_once_with("Request succeeded: 201", extra=ANY)
             extra = mock_info.call_args[1]["extra"]
             assert extra["response_body"] == response_body

@@ -28,7 +28,7 @@ def setup_logger():
 
 def _get_log_context(
     request: Request,
-    status_code: int,
+    status_code: int = None,
     detail: str = None,
     response_body: dict | None = None,
 ):
@@ -69,26 +69,33 @@ def _get_log_context(
     }
 
 
-def log_exception(request: Request, exc, response_body: dict | None = None):
-    """Log an exception with full context."""
-    log_context = _get_log_context(request, exc.status_code, exc.detail, response_body)
-
-    if exc.status_code >= 500:
-        logger.error(
-            f"Server error: {exc.status_code}", extra=log_context, exc_info=True
+def log_response(
+    request: Request,
+    exc=None,
+    response_body: dict | None = None,
+    status_code: int = None,
+):
+    """Log a response with full context."""
+    if isinstance(exc, Exception):
+        log_context = _get_log_context(
+            request, exc.status_code, exc.detail, response_body
         )
-    elif exc.status_code >= 400:
-        if exc.status_code == 400:
-            logger.error("Bad Request", extra=log_context)
-        elif exc.status_code in (401, 403, 422, 429):
-            logger.warning(f"Client error: {exc.status_code}", extra=log_context)
+        if exc.status_code >= 500:
+            logger.error(
+                f"Server error: {exc.status_code}", extra=log_context, exc_info=True
+            )
         else:
-            logger.info(f"Client error: {exc.status_code}", extra=log_context)
+            if exc.status_code == 400:
+                logger.error("Bad Request", extra=log_context)
+            elif exc.status_code == 401:
+                logger.error("Unauthorized", extra=log_context)
+            elif exc.status_code == 404:
+                logger.info(f"Not found: {exc.status_code}", extra=log_context)
+            elif exc.status_code == 409:
+                logger.info(f"Conflict: {exc.status_code}", extra=log_context)
+            else:
+                # All other client errors
+                logger.info(f"Client error: {exc.status_code}", extra=log_context)
     else:
-        logger.info("Request succeeded", extra=log_context)
-
-
-def log_success(request: Request, status_code: int, response_body: dict | None = None):
-    """Log a successful response with full context."""
-    log_context = _get_log_context(request, status_code, response_body=response_body)
-    logger.info("Request succeeded", extra=log_context)
+        log_context = _get_log_context(request, status_code, None, response_body)
+        logger.info(f"Request succeeded: {status_code}", extra=log_context)
