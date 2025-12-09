@@ -35,13 +35,20 @@ class TestLoggingMiddleware:
         request = Mock()
         response = Mock()
         response.status_code = 200
+        response.body_iterator = AsyncIteratorMock([b'{"message": "success"}'])
+        response.headers = {}
+        response.media_type = "application/json"
 
         call_next = AsyncMock(return_value=response)
 
-        with patch("src.core.middleware.log_success") as mock_log_success:
+        with patch("src.core.middleware.log_response") as mock_log_response:
             result = await middleware.dispatch(request, call_next)
-            mock_log_success.assert_called_once_with(request, 200)
-            assert result == response
+            mock_log_response.assert_called_once_with(
+                request,
+                response_body={"message": "success"},
+                status_code=response.status_code,
+            )
+            assert result.status_code == response.status_code
 
     @pytest.mark.asyncio
     async def test_dispatch_error_response_no_log(self):
@@ -53,10 +60,64 @@ class TestLoggingMiddleware:
 
         call_next = AsyncMock(return_value=response)
 
-        with patch("src.logger.log_success") as mock_log_success:
+        with patch("src.logger.log_response") as mock_log_response:
             result = await middleware.dispatch(request, call_next)
-            mock_log_success.assert_not_called()
+            mock_log_response.assert_not_called()
             assert result == response
+
+    @pytest.mark.asyncio
+    async def test_dispatch_call_next_exception(self):
+        """Test middleware re-raises exceptions from call_next."""
+        middleware = LoggingMiddleware(Mock())
+        request = Mock()
+        call_next = AsyncMock(side_effect=Exception("call_next error"))
+
+        with pytest.raises(Exception, match="call_next error"):
+            await middleware.dispatch(request, call_next)
+
+    @pytest.mark.asyncio
+    async def test_dispatch_invalid_json(self):
+        """Test middleware handles invalid JSON in response body."""
+        middleware = LoggingMiddleware(Mock())
+        request = Mock()
+        response = Mock()
+        response.status_code = 200
+        response.body_iterator = AsyncIteratorMock([b"invalid json"])
+        response.headers = {}
+        response.media_type = "application/json"
+
+        call_next = AsyncMock(return_value=response)
+
+        with patch("src.core.middleware.log_response") as mock_log_response:
+            result = await middleware.dispatch(request, call_next)
+            mock_log_response.assert_called_once_with(
+                request,
+                response_body="invalid json",
+                status_code=response.status_code,
+            )
+            assert result.status_code == response.status_code
+
+    @pytest.mark.asyncio
+    async def test_dispatch_undecodable_body(self):
+        """Test middleware handles undecodable response body."""
+        middleware = LoggingMiddleware(Mock())
+        request = Mock()
+        response = Mock()
+        response.status_code = 200
+        response.body_iterator = AsyncIteratorMock([b"\xff\xfe"])  # Invalid UTF-8 bytes
+        response.headers = {}
+        response.media_type = "application/json"
+
+        call_next = AsyncMock(return_value=response)
+
+        with patch("src.core.middleware.log_response") as mock_log_response:
+            result = await middleware.dispatch(request, call_next)
+            mock_log_response.assert_called_once_with(
+                request,
+                response_body="<undecodable>",
+                status_code=response.status_code,
+            )
+            assert result.status_code == response.status_code
 
 
 class TestRequestSizeLimiter:

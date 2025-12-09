@@ -1,4 +1,4 @@
-# middlewares.py
+import json
 import uuid
 
 from fastapi import FastAPI, HTTPException, Request, Response
@@ -11,7 +11,7 @@ from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoin
 from starlette.types import ASGIApp
 
 from exceptions.exceptions import AuthException, app_exception_handler
-from logger import log_success
+from logger import log_response
 
 
 class RequestSizeLimiter(BaseHTTPMiddleware):
@@ -83,37 +83,65 @@ class RequestIDMiddleware(BaseHTTPMiddleware):
 
 
 class LoggingMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next):
-        response: Response = await call_next(request)
-        if response.status_code < 400:
-            log_success(request, response.status_code)
-        return response
+    async def dispatch(
+        self, request: Request, call_next: RequestResponseEndpoint
+    ) -> Response:
+        try:
+            response = await call_next(request)
+        except Exception:
+            raise
+
+        if response.status_code >= 400:
+            return response  # Let exception handler log it
+
+        body = b""
+        async for chunk in response.body_iterator:
+            body += chunk
+
+        try:
+            body_str = body.decode("utf-8")
+            try:
+                response_json = json.loads(body_str)
+            except json.JSONDecodeError:
+                response_json = None
+        except Exception:
+            body_str = "<undecodable>"
+            response_json = None
+
+        log_response(
+            request,
+            response_body=response_json or body_str[:1000],
+            status_code=response.status_code,
+        )
+
+        return Response(
+            content=body,
+            status_code=response.status_code,
+            headers=dict(response.headers),
+            media_type=response.media_type,
+        )
 
 
-limiter = Limiter(key_func=get_remote_address)
+limiter: Limiter = Limiter(key_func=get_remote_address)
 
 
 def add_middlewares(app: FastAPI) -> None:
     # 1. Highest priority – reject huge bodies FIRST
     app.add_middleware(RequestSizeLimiter, max_size=10 * 1024 * 1024)  # 10 MB
-
     app.state.limiter = limiter
-    # 2. Security headers
     app.add_middleware(SecurityHeadersMiddleware)
     app.add_middleware(LoggingMiddleware)
     app.add_middleware(RequestIDMiddleware)
     app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
     app.add_exception_handler(AuthException, app_exception_handler)
-    app.add_middleware(
-        SlowAPIMiddleware
-    )  # <-- this must come AFTER limiter is in state
+    app.add_middleware(SlowAPIMiddleware)  # must come AFTER limiter is in state
 
-    # 5. CORS – locked down (configure origins as needed)
     app.add_middleware(
         CORSMiddleware,
-        # allow_origins=["http://localhost:8000",
-        # "http:/http://127.0.0.1:8000"
-        # ], # to be populated
+        allow_origins=[
+            "http://localhost:3000",
+            "http://127.0.0.1:3000",
+        ],
         allow_credentials=True,
         allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         allow_headers=["*"],

@@ -12,7 +12,7 @@ from starlette.status import (
 )
 
 from exceptions.enums import ErrorCode
-from logger import log_exception
+from logger import log_response
 
 
 class AuthException(HTTPException):
@@ -118,7 +118,7 @@ async def app_exception_handler(request: Request, exc: AuthException) -> JSONRes
         + "Z",
     }
 
-    log_exception(request, exc, response_body)
+    log_response(request, exc, response_body)
 
     return JSONResponse(
         status_code=exc.status_code,
